@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latestmajor</LangVersion>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RGamaFelix.CqrsDispatcher.Config\RGamaFelix.CqrsDispatcher.Config.csproj"/>
+        <ProjectReference Include="..\RGamaFelix.CqrsDispatcher.Validator.Config\RGamaFelix.CqrsDispatcher.Validator.Config.csproj"/>
+        <ProjectReference Include="..\RGamaFelix.CqrsDispatcher\RGamaFelix.CqrsDispatcher.csproj"/>
+        <ProjectReference Include="..\RGamaFelix.ObserverDispatcher\RGamaFelix.CqrsDispatcher.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FluentValidation" Version="12.0.0"/>
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0-preview.5.25277.114"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0-preview.5.25277.114"/>
+    </ItemGroup>
+
+</Project>
