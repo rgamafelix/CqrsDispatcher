@@ -25,7 +25,7 @@ public static class CqrsDispatcherConfiguration
     params Assembly[] assemblies)
   {
     services.Scan(scan => scan.FromAssemblies(assemblies)
-      .AddClasses(classes => classes.AssignableToAny(typeof(IQueryHandler<,>), typeof(IQueryHandlerSelector<,>),
+      .AddClasses(classes => classes.AssignableToAny(typeof(IQueryHandler<,>), typeof(IDefaultQueryHandler<,>),
         typeof(ICommandHandler<>), typeof(IQueryRequestBehavior<,>), typeof(IQueryHandlerBehavior<,,>),
         typeof(ICommandRequestBehavior<>), typeof(ICommandHandlerBehavior<,>)))
       .AsImplementedInterfaces()
