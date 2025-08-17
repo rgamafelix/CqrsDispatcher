@@ -3,7 +3,7 @@ using RGamaFelix.ObserverDispacher.Test.TestRequest;
 
 namespace RGamaFelix.ObserverDispacher.Test.FakeHandlers;
 
-public class DefaultQueryQueryHandler : IDefaultQueryHandler<BaseQueryRequest, TestQueryResponse>
+public class AlternateDefaultQueryHandler : IDefaultQueryHandler<BaseQueryRequest, TestQueryResponse>
 {
   public Task<TestQueryResponse> HandleAsync(BaseQueryRequest request, CancellationToken cancellationToken)
   {

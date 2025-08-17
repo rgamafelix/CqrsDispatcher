@@ -20,7 +20,7 @@ public static class CqrsDispatcherConfiguration
     services.AddSingleton<Dispatcher>();
 
     // Handler selector
-    services.AddScoped(typeof(IQueryHandlerSelector<,>), typeof(DefaultFirstSelector<,>));
+    services.AddScoped(typeof(IQueryHandlerSelector<,>), typeof(DefaultSelector<,>));
 
     return services;
   }
@@ -29,7 +29,7 @@ public static class CqrsDispatcherConfiguration
     params Assembly[] assemblies)
   {
     services.Scan(scan => scan.FromAssemblies(assemblies)
-      .AddClasses(classes => classes.AssignableToAny(typeof(IQueryHandler<,>), typeof(IDefaultHandler<,>),
+      .AddClasses(classes => classes.AssignableToAny(typeof(IQueryHandler<,>), typeof(IDefaultQueryHandler<,>),
         typeof(ICommandHandler<>), typeof(IQueryRequestBehavior<,>), typeof(IQueryHandlerBehavior<,,>),
         typeof(ICommandRequestBehavior<>), typeof(ICommandHandlerBehavior<,>)))
       .AsImplementedInterfaces()

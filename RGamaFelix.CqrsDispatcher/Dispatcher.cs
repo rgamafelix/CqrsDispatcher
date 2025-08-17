@@ -78,8 +78,8 @@ public class Dispatcher
     return await fullPipeline(request, cancellationToken);
   }
 
-  private async Task AllHandlers<TRequest>(TRequest req, CancellationToken token, List<object> handlers,
-    TRequest originalRequest)
+  private async Task AllHandlers<TRequest>(TRequest req, List<object> handlers, TRequest originalRequest,
+    CancellationToken token)
     where TRequest : ICommandRequest
   {
     var tasks = handlers.Select(async handler =>
@@ -124,12 +124,7 @@ public class Dispatcher
       .Cast<object>()
       .ToList();
 
-    if (handlers.Count == 0)
-    {
-      throw new NoHandlerRegisteredException<TRequest>();
-    }
-
-    return handlers;
+    return handlers.Count == 0 ? throw new NoHandlerRegisteredException<TRequest>() : handlers;
   }
 
   private int GetExecutionOrder(object? behavior)
@@ -159,12 +154,7 @@ public class Dispatcher
     var selector = _serviceProvider.GetRequiredService<IQueryHandlerSelector<TRequest, TResponse>>();
     var handler = selector.SelectHandler(request, handlers);
 
-    if (handler is null)
-    {
-      throw new NoHandlerSelectorFoundException<TRequest>();
-    }
-
-    return handler;
+    return handler ?? throw new NoHandlerSelectorFoundException<TRequest>();
   }
 
   private Func<TRequest, CancellationToken, Task<TResponse>> GetQueryHandlerBehaviors<TRequest, TResponse>(
@@ -241,7 +231,7 @@ public class Dispatcher
     var requestPipelines = GetRequestCommandBehaviors(request);
 
     var fullPipeline =
-      (Func<TRequest, CancellationToken, Task>)((req, token) => AllHandlers(req, token, handlers, request));
+      (Func<TRequest, CancellationToken, Task>)((req, token) => AllHandlers(req, handlers, request, token));
 
     foreach (var pipeline in requestPipelines)
     {

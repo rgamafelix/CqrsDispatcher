@@ -13,7 +13,7 @@ public class BaseQueryHandler : IQueryHandler<BaseQueryRequest, TestQueryRespons
   }
 }
 
-public class DefaultQueryQueryHandler : IDefaultQueryHandler<BaseQueryRequest, TestQueryResponse>
+public class DefaultQueryQueryQueryHandler : IDefaultQueryHandler<BaseQueryRequest, TestQueryResponse>
 {
   public Task<TestQueryResponse> HandleAsync(BaseQueryRequest request, CancellationToken cancellationToken)
   {

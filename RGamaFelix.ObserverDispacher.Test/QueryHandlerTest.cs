@@ -53,7 +53,7 @@ public class QueryHandlerTest
     var services = CreateCleanServices();
     services.AddCqrsDispatcherFramework();
     services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, BaseQueryHandler>();
-    services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, DefaultQueryQueryHandler>();
+    services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, DefaultQueryHandler>();
     var provider = services.BuildServiceProvider();
     var dispatcher = provider.GetRequiredService<Dispatcher>();
 
@@ -65,14 +65,32 @@ public class QueryHandlerTest
   }
 
   [Fact]
-  public async Task DispatcherShouldSelectAlternateQueryHandlerTest()
+  public async Task DispatcherShouldThrowExceptionWhenMultipleDefaultQueryHandlerIsRegisteredTest()
+  {
+    // Arrange
+    var services = CreateCleanServices();
+    services.AddCqrsDispatcherFramework();
+    services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, DefaultQueryHandler>();
+    services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, AlternateDefaultQueryHandler>();
+    var provider = services.BuildServiceProvider();
+    var dispatcher = provider.GetRequiredService<Dispatcher>();
+
+    // Act
+    var exception = await Assert.ThrowsAsync<MultipleQueryHandlersRegisteredException<BaseQueryRequest>>(async () =>
+    {
+      await dispatcher.Send<BaseQueryRequest, TestQueryResponse>(new BaseQueryRequest("strValue", 1));
+    });
+  }
+
+  [Fact]
+  public async Task DispatcherShouldSelectBasendonSelectorQueryHandlerTest()
   {
     // Arrange
     const string expectedResult = "AlternatestrValue1";
     var services = CreateCleanServices();
     services.AddCqrsDispatcherFramework();
     services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, BaseQueryHandler>();
-    services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, AlternateQueryHamdler>();
+    services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, AlternateQueryHandler>();
     services.AddScoped<IQueryHandlerSelector<BaseQueryRequest, TestQueryResponse>, QueryHandlerSelector>();
     var provider = services.BuildServiceProvider();
     var dispatcher = provider.GetRequiredService<Dispatcher>();
@@ -85,22 +103,21 @@ public class QueryHandlerTest
   }
 
   [Fact]
-  public async Task DispatcherShouldSelectFirstRegisteredQueryHandlerTest()
+  public async Task DispatcherShouldThrowExceptionWhenMultipleQueryHandlerIsRegisteredTest()
   {
     // Arrange
-    const string expectedResult = "BasestrValue1";
     var services = CreateCleanServices();
     services.AddCqrsDispatcherFramework();
     services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, BaseQueryHandler>();
-    services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, AlternateQueryHamdler>();
+    services.AddScoped<IQueryHandler<BaseQueryRequest, TestQueryResponse>, AlternateQueryHandler>();
     var provider = services.BuildServiceProvider();
     var dispatcher = provider.GetRequiredService<Dispatcher>();
 
-    //Act
-    var result = await dispatcher.Send<BaseQueryRequest, TestQueryResponse>(new BaseQueryRequest("strValue", 1));
-
-    //Assert
-    Assert.Equal(expectedResult, result.ResponseValue);
+    // Act
+    var exception = await Assert.ThrowsAsync<MultipleQueryHandlersRegisteredException<BaseQueryRequest>>(async () =>
+    {
+      await dispatcher.Send<BaseQueryRequest, TestQueryResponse>(new BaseQueryRequest("strValue", 1));
+    });
   }
 
   [Fact]
@@ -118,7 +135,4 @@ public class QueryHandlerTest
       await dispatcher.Send<BaseQueryRequest, TestQueryResponse>(new BaseQueryRequest("strValue", 1));
     });
   }
-
-  [Fact]
-  public async Task
 }
