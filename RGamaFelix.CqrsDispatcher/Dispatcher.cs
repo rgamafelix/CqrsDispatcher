@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RGamaFelix.CqrsDispatcher.Command;
@@ -16,14 +18,19 @@ namespace RGamaFelix.CqrsDispatcher;
 /// <summary>Provides methods for dispatching command and query requests for processing.</summary>
 public class Dispatcher
 {
+  private static readonly ConcurrentDictionary<Type, Type[]> _interfaceCache = new();
+
+  // Thread-safe caches for reflection operations
+  private static readonly ConcurrentDictionary<Type, PropertyInfo?> _orderPropertyCache = new();
+  private static readonly ConcurrentDictionary<Type, MethodInfo?> _shouldRunMethodCache = new();
   private readonly ILogger<Dispatcher> _logger;
   private readonly IServiceProvider _serviceProvider;
 
   /// <summary>Provides methods for dispatching command and query requests for processing.</summary>
   public Dispatcher(IServiceProvider serviceProvider, ILogger<Dispatcher> logger)
   {
-    _serviceProvider = serviceProvider;
-    _logger = logger;
+    _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    _logger = logger ?? throw new ArgumentNullException(nameof(logger));
   }
 
   /// <summary>Publishes a command request for asynchronous processing.</summary>
@@ -31,23 +38,34 @@ public class Dispatcher
   /// <param name="onException">Optional callback to handle exceptions that may occur during processing.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <typeparam name="TRequest">The type of the command request, constrained to <see cref="ICommandRequest" />.</typeparam>
-  public void Publish<TRequest>(TRequest request, Action<Exception>? onException = null,
+  /// <returns>A task representing the asynchronous command processing operation.</returns>
+  public Task Publish<TRequest>(TRequest request, Action<Exception>? onException = null,
     CancellationToken cancellationToken = default)
     where TRequest : ICommandRequest
   {
-    using var scope = _logger.BeginScope(typeof(TRequest).Name);
-
-    _ = Task.Run(async () =>
+    return Task.Run(async () =>
     {
       try
       {
-        await InternalPublish(request, cancellationToken)
+        using var scope = _serviceProvider.CreateScope();
+        var scopedProvider = scope.ServiceProvider;
+        using var loggerScope = _logger.BeginScope(typeof(TRequest).Name);
+
+        await InternalPublish(request, scopedProvider, cancellationToken)
           .ConfigureAwait(false);
+      }
+      catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+      {
+        _logger.LogDebug("Command processing was cancelled for {RequestType}", typeof(TRequest).Name);
+
+        throw; // Re-throw cancellation exceptions
       }
       catch (Exception ex)
       {
         _logger.LogError(ex, "An error occurred while processing the command request");
         onException?.Invoke(ex);
+
+        throw; // Re-throw to allow proper error handling by caller
       }
     }, cancellationToken);
   }
@@ -63,74 +81,59 @@ public class Dispatcher
     CancellationToken cancellationToken = default)
     where TRequest : IQueryRequest<TResponse>
   {
+    ArgumentNullException.ThrowIfNull(request);
     using var scope = _logger.BeginScope(typeof(TRequest).Name);
     var handler = GetQueryHandler<TRequest, TResponse>(request);
-    var handlerDelegate = GetQueryHandlerBehaviors(request, handler);
-    var requestPipelines = GetQueryRequestBehaviors<TRequest, TResponse>(request);
-    var fullPipeline = handlerDelegate;
+    var handlerExecutionPipeline = GetQueryHandlerBehaviors(request, handler);
+    var requestBehaviors = GetQueryRequestBehaviors<TRequest, TResponse>(request);
 
-    foreach (var pipeline in requestPipelines)
+    var completePipeline = BuildPipeline(handlerExecutionPipeline, requestBehaviors,
+      (behavior, next) => (req, ct) =>
+      {
+        return behavior != null ?
+          ((IQueryRequestBehavior<TRequest, TResponse>)behavior).Handle(req, next, ct) :
+          throw new NullReferenceException($"Null behavior in query pipeline for request {typeof(TRequest).Name}");
+      });
+
+    return await completePipeline(request, cancellationToken);
+  }
+
+  private static TDelegate BuildPipeline<TDelegate>(TDelegate coreHandler, IEnumerable<object?> behaviors,
+    Func<object?, TDelegate, TDelegate> wrapBehavior)
+  {
+    var pipeline = coreHandler;
+
+    foreach (var behavior in behaviors)
     {
-      var next = fullPipeline;
-      fullPipeline = (r, ct) => pipeline.Handle(r, next, ct);
+      pipeline = wrapBehavior(behavior, pipeline);
     }
 
-    return await fullPipeline(request, cancellationToken);
+    return pipeline;
   }
 
-  private async Task AllHandlers<TRequest>(TRequest req, List<object> handlers, TRequest originalRequest,
-    CancellationToken token)
+  private static List<object> GetCommandHandlers<TRequest>(IServiceProvider provider)
     where TRequest : ICommandRequest
   {
-    var tasks = handlers.Select(async handler =>
-    {
-      var handlerType = handler.GetType();
+    var requestType = typeof(TRequest);
+    var handlerType = typeof(ICommandHandler<>).MakeGenericType(requestType);
 
-      var handlerPipelines = _serviceProvider
-        .GetServices(typeof(ICommandHandlerBehavior<,>).MakeGenericType(handlerType, typeof(TRequest)))
-        .Where(p => SatisfyCondition(p, originalRequest))
-        .OrderBy(GetExecutionOrder)
-        .Cast<dynamic>()
-        .ToList();
-
-      var handlerDelegate = (handler as ICommandHandler<TRequest>)!.Handle;
-
-      foreach (var behavior in handlerPipelines)
-      {
-        var next = handlerDelegate;
-        handlerDelegate = (r, ct) => behavior.Handle((dynamic)r, (dynamic)handler, next, ct);
-      }
-
-      await handlerDelegate(req, token);
-    });
-
-    await Task.WhenAll(tasks);
-  }
-
-  private List<object> GetCommandHandlers<TRequest>()
-    where TRequest : ICommandRequest
-  {
-    var handlers = _serviceProvider.GetServices(typeof(ICommandHandler<>).MakeGenericType(typeof(TRequest)))
-      .Where(handler =>
-      {
-        var handlerInterface = handler?.GetType()
-          .GetInterfaces()
-          .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>));
-
-        var handledType = handlerInterface?.GetGenericArguments()[0];
-
-        return handledType != null && handledType.IsAssignableFrom(typeof(TRequest));
-      })
+    var handlers = provider.GetServices(handlerType)
+      .Where(handler => IsHandlerCompatible(handler, requestType))
       .Cast<object>()
       .ToList();
 
     return handlers.Count == 0 ? throw new NoHandlerRegisteredException<TRequest>() : handlers;
   }
 
-  private int GetExecutionOrder(object? behavior)
+  private static int GetExecutionOrder(object? behavior)
   {
-    var orderProperty = behavior?.GetType()
-      .GetProperty("Order");
+    if (behavior is null)
+    {
+      return 0;
+    }
+
+    var behaviorType = behavior.GetType();
+    var orderProperty = _orderPropertyCache.GetOrAdd(behaviorType, type => type.GetProperty("Order"));
 
     if (orderProperty is null)
     {
@@ -140,9 +143,107 @@ public class Dispatcher
     return (int?)orderProperty.GetValue(behavior, null) ?? 0;
   }
 
+  private static bool IsCommandBehaviorCompatible(object? behavior, Type requestType)
+  {
+    if (behavior is null)
+    {
+      return false;
+    }
+
+    var behaviorTypeInfo = behavior.GetType();
+    var interfaces = _interfaceCache.GetOrAdd(behaviorTypeInfo, type => type.GetInterfaces());
+
+    var interfaceType = interfaces.FirstOrDefault(i =>
+      i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandRequestBehavior<>));
+
+    var handledType = interfaceType?.GetGenericArguments()[0];
+
+    return handledType != null && handledType.IsAssignableFrom(requestType);
+  }
+
+  private static bool IsHandlerCompatible(object? handler, Type requestType)
+  {
+    if (handler is null)
+    {
+      return false;
+    }
+
+    var handlerType = handler.GetType();
+    var interfaces = _interfaceCache.GetOrAdd(handlerType, type => type.GetInterfaces());
+
+    var handlerInterface =
+      interfaces.FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>));
+
+    var handledType = handlerInterface?.GetGenericArguments()[0];
+
+    return handledType != null && handledType.IsAssignableFrom(requestType);
+  }
+
+  private static bool SatisfyCondition(object? behavior, object request)
+  {
+    if (behavior is null)
+    {
+      return false;
+    }
+
+    var behaviorType = behavior.GetType();
+    var shouldRunMethod = _shouldRunMethodCache.GetOrAdd(behaviorType, type => type.GetMethod("ShouldRun"));
+
+    if (shouldRunMethod is null)
+    {
+      return true;
+    }
+
+    var result = shouldRunMethod.Invoke(behavior, [request]);
+
+    return result is true;
+  }
+
+  private async Task AllHandlers<TRequest>(TRequest req, List<object> handlers, TRequest originalRequest,
+    IServiceProvider provider, CancellationToken token)
+    where TRequest : ICommandRequest
+  {
+    var tasks = handlers.Select(async handler =>
+    {
+      var handlerType = handler.GetType();
+
+      var handlerPipelines = GetBehaviors<dynamic>(
+        typeof(ICommandHandlerBehavior<,>).MakeGenericType(handlerType, typeof(TRequest)), typeof(TRequest),
+        originalRequest, "command handler pipelines", provider);
+
+      var handlerDelegate = (handler as ICommandHandler<TRequest>)!.Handle;
+
+      var pipeline = BuildPipeline(handlerDelegate, handlerPipelines,
+        (behavior, next) => (r, ct) =>
+          behavior != null ?
+            (Task)((dynamic)behavior).Handle((dynamic)r, (dynamic)handler, next, ct) :
+            throw new NullReferenceException($"Null behavior in command pipeline for request {typeof(TRequest).Name}"));
+
+      await pipeline(req, token);
+    });
+
+    await Task.WhenAll(tasks);
+  }
+
+  private List<T> GetBehaviors<T>(Type behaviorGenericType, Type requestType, object request, string logMessage,
+    IServiceProvider provider)
+  {
+    var behaviors = provider.GetServices(behaviorGenericType)
+      .Where(p => SatisfyCondition(p, request))
+      .OrderBy(GetExecutionOrder)
+      .Cast<T>()
+      .ToList();
+
+    _logger.LogDebug("{amount} {logMessage} found for {requestType}", behaviors.Count, logMessage, requestType);
+
+    return behaviors;
+  }
+
   private IQueryHandler<TRequest, TResponse> GetQueryHandler<TRequest, TResponse>(TRequest request)
     where TRequest : IQueryRequest<TResponse>
   {
+    ArgumentNullException.ThrowIfNull(request);
+
     var handlers = _serviceProvider.GetServices<IQueryHandler<TRequest, TResponse>>()
       .ToList();
 
@@ -163,102 +264,59 @@ public class Dispatcher
   {
     var handlerType = handler.GetType();
 
-    var handlerPipelines = _serviceProvider
-      .GetServices(typeof(IQueryHandlerBehavior<,,>).MakeGenericType(handlerType, typeof(TRequest), typeof(TResponse)))
-      .Where(p => SatisfyCondition(p, request))
-      .OrderBy(GetExecutionOrder)
-      .Cast<dynamic>()
-      .ToList();
-
-    _logger.LogDebug("{amount} query handler pipelines found for {requestType}", handlerPipelines.Count,
-      typeof(TRequest));
+    var handlerPipelines = GetBehaviors<dynamic>(
+      typeof(IQueryHandlerBehavior<,,>).MakeGenericType(handlerType, typeof(TRequest), typeof(TResponse)),
+      typeof(TRequest), request, "query handler pipelines", _serviceProvider);
 
     Func<TRequest, CancellationToken, Task<TResponse>> handlerDelegate = handler.HandleAsync;
 
-    foreach (var behavior in handlerPipelines)
-    {
-      var next = handlerDelegate;
-      handlerDelegate = (r, ct) => behavior.Handle((dynamic)r, (dynamic)handler, next, ct);
-    }
-
-    return handlerDelegate;
+    return BuildPipeline(handlerDelegate, handlerPipelines,
+      (behavior, next) => (r, ct) =>
+      {
+        return behavior != null ?
+          (Task<TResponse>)((dynamic)behavior).Handle((dynamic)r, (dynamic)handler, next, ct) :
+          throw new NullReferenceException($"Null behavior in query pipeline for request {typeof(TRequest).Name}");
+      });
   }
 
   private List<IQueryRequestBehavior<TRequest, TResponse>> GetQueryRequestBehaviors<TRequest, TResponse>(
     TRequest request)
     where TRequest : IQueryRequest<TResponse>
   {
-    var requestPipelines = _serviceProvider.GetServices<IQueryRequestBehavior<TRequest, TResponse>>()
+    return GetBehaviors<IQueryRequestBehavior<TRequest, TResponse>>(
+      typeof(IQueryRequestBehavior<,>).MakeGenericType(typeof(TRequest), typeof(TResponse)), typeof(TRequest), request,
+      "query request pipelines", _serviceProvider);
+  }
+
+  private List<object?> GetRequestCommandBehaviors<TRequest>(TRequest request, IServiceProvider provider)
+    where TRequest : ICommandRequest
+  {
+    var requestType = typeof(TRequest);
+    var behaviorType = typeof(ICommandRequestBehavior<>).MakeGenericType(requestType);
+
+    var requestPipelines = provider.GetServices(behaviorType)
+      .Where(behavior => IsCommandBehaviorCompatible(behavior, requestType))
       .Where(p => SatisfyCondition(p, request))
       .OrderBy(GetExecutionOrder)
       .ToList();
 
-    _logger.LogDebug("{amount} query request pipelines found for {requestType}", requestPipelines.Count,
-      typeof(TRequest));
+    _logger.LogDebug("{amount} command request pipelines found for {requestType}", requestPipelines.Count, requestType);
 
     return requestPipelines;
   }
 
-  private List<object?> GetRequestCommandBehaviors<TRequest>(TRequest request)
+  private async Task InternalPublish<TRequest>(TRequest request, IServiceProvider provider,
+    CancellationToken cancellationToken)
     where TRequest : ICommandRequest
   {
-    var requestPipelines = _serviceProvider
-      .GetServices(typeof(ICommandRequestBehavior<>).MakeGenericType(typeof(TRequest)))
-      .Where(behavior =>
-      {
-        var interfaceType = behavior?.GetType()
-          .GetInterfaces()
-          .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandRequestBehavior<>));
+    var handlers = GetCommandHandlers<TRequest>(provider);
+    var requestPipelines = GetRequestCommandBehaviors(request, provider);
 
-        var handledType = interfaceType?.GetGenericArguments()[0];
-
-        return handledType != null && handledType.IsAssignableFrom(typeof(TRequest));
-      })
-      .Where(p => SatisfyCondition(p, request))
-      .OrderBy(GetExecutionOrder)
-      .ToList();
-
-    _logger.LogDebug("{amount} command request pipelines found for {requestType}", requestPipelines.Count,
-      typeof(TRequest));
-
-    return requestPipelines;
-  }
-
-  private async Task InternalPublish<TRequest>(TRequest request, CancellationToken cancellationToken)
-    where TRequest : ICommandRequest
-  {
-    var handlers = GetCommandHandlers<TRequest>();
-    var requestPipelines = GetRequestCommandBehaviors(request);
-
-    var fullPipeline =
-      (Func<TRequest, CancellationToken, Task>)((req, token) => AllHandlers(req, handlers, request, token));
-
-    foreach (var pipeline in requestPipelines)
-    {
-      var next = fullPipeline;
-      fullPipeline = (r, ct) => (pipeline as ICommandRequestBehavior<TRequest>)!.Handle(r, next, ct);
-    }
+    var fullPipeline = BuildPipeline(
+      (Func<TRequest, CancellationToken, Task>)((req, token) => AllHandlers(req, handlers, request, provider, token)),
+      requestPipelines,
+      (behavior, next) => (r, ct) => ((ICommandRequestBehavior<TRequest>)behavior!).Handle(r, next, ct));
 
     await fullPipeline(request, cancellationToken);
-  }
-
-  private bool SatisfyCondition(object? p, object request)
-  {
-    if (p is null)
-    {
-      return false;
-    }
-
-    var shouldRunMethod = p.GetType()
-      .GetMethod("ShouldRun");
-
-    if (shouldRunMethod is null)
-    {
-      return true;
-    }
-
-    var result = shouldRunMethod.Invoke(p, [request]);
-
-    return result is true;
   }
 }
