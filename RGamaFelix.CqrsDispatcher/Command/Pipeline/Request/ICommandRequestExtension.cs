@@ -1,4 +1,4 @@
-namespace RGamaFelix.CqrsDispatcher.Command.Pipeline.Request;
+namespace RGamaFelix.CqrsDispatcher.Command.Extension.Request;
 
 /// <summary>
 ///   Defines the behavior pipeline for handling command requests. Command request behaviors allow for the addition
@@ -6,8 +6,7 @@ namespace RGamaFelix.CqrsDispatcher.Command.Pipeline.Request;
 ///   modifying the request.
 /// </summary>
 /// <typeparam name="TRequest">The type of the command request. Must implement <see cref="ICommandRequest" />.</typeparam>
-public interface ICommandRequestBehavior<TRequest>
-  where TRequest : ICommandRequest
+public interface ICommandRequestExtension<TRequest> where TRequest : ICommandRequest
 {
   /// <summary>
   ///   Represents the execution order of the behavior within the command request pipeline. Specifies the order in

@@ -3,10 +3,10 @@ using RGamaFelix.CqrsDispatcher.Test.TestRequest;
 
 namespace RGamaFelix.CqrsDispatcher.Test.Handlers.Query;
 
-public class BaseQueryHandler : IQueryHandler<BaseQueryRequest, TestQueryResponse>
+public class BaseQueryHandler : IQueryHandler<QueryRequest, TestQueryResponse>
 {
-  public Task<TestQueryResponse> HandleAsync(BaseQueryRequest request, CancellationToken cancellationToken)
+  public Task<TestQueryResponse> HandleAsync(QueryRequest queryRequest, CancellationToken cancellationToken)
   {
-    return Task.FromResult(new TestQueryResponse("Base" + request.StrValue + request.IntValue));
+    return Task.FromResult(new TestQueryResponse("Base" + queryRequest.StrValue + queryRequest.IntValue));
   }
 }

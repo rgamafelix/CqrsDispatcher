@@ -6,9 +6,10 @@ namespace RGamaFelix.CqrsDispatcher.Exceptions;
 ///   This exception is used in scenarios where the CQRS dispatcher detects more than one query handler for a single
 ///   request type, violating the assumption that there should only be one query handler per request.
 /// </remarks>
-public class MultipleQueryHandlersRegisteredException<TRequest> : Exception
-  where TRequest : IRequest
+public class MultipleQueryHandlersRegisteredException<TRequest> : Exception where TRequest : IRequestBase
 {
+  private const string DefaultErrorMessage = "Multiple query handlers found for request type {0}";
+
   /// <summary>Represents an exception that is thrown when multiple query handlers are selected for a specific request type.</summary>
   /// <typeparam name="TRequest">The type of the request for which the exception occurred.</typeparam>
   /// <remarks>
@@ -40,6 +41,4 @@ public class MultipleQueryHandlersRegisteredException<TRequest> : Exception
     innerException)
   {
   }
-
-  private const string DefaultErrorMessage = "Multiple query handlers found for request type {0}";
 }

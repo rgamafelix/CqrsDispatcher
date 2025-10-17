@@ -4,11 +4,11 @@ using RGamaFelix.CqrsDispatcher.Test.TestRequest;
 
 namespace RGamaFelix.CqrsDispatcher.Test.Handlers.Query.Selector;
 
-public class QueryHandlerSelector : IQueryHandlerSelector<QueryRequest, TestQueryResponse>
+public class NullQueryHandlerSelector : IQueryHandlerSelector<QueryRequest, TestQueryResponse>
 {
   public IQueryHandler<QueryRequest, TestQueryResponse>? SelectHandler(QueryRequest queryRequest,
     IEnumerable<IQueryHandler<QueryRequest, TestQueryResponse>> handlers)
   {
-    return handlers.FirstOrDefault(h => h.GetType().Name.Contains("Alternate"));
+    return null;
   }
 }

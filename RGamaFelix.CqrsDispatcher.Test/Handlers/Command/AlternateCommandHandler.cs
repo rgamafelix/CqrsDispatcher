@@ -3,11 +3,11 @@ using RGamaFelix.CqrsDispatcher.Test.TestRequest;
 
 namespace RGamaFelix.CqrsDispatcher.Test.Handlers.Command;
 
-public class BaseCommandHandler : ICommandHandler<BaseCommandCommandRequest>
+public class AlternateCommandHandler : ICommandHandler<BaseCommandCommandRequest>
 {
   private readonly Action _callback;
 
-  public BaseCommandHandler(Action callback)
+  public AlternateCommandHandler(Action callback)
   {
     _callback = callback;
   }

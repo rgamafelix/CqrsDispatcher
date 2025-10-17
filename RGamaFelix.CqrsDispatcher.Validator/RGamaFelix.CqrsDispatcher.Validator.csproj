@@ -5,7 +5,32 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latestmajor</LangVersion>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Title>CqrsDispatcher</Title>
+        <Authors>Rodrigo Gama Felix &lt;rodrigo@gamafelix.com.br&gt;</Authors>
+        <Description></Description>
+        <Copyright>Rodrigo Gama Felix&lt;rodrigo@gamafelix.com.br&gt;@2025</Copyright>
+        <PackageProjectUrl>https://github.com/rgamafelix/CqrsDispatcher</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/rgamafelix/CqrsDispatcher</RepositoryUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>c# cqrs</PackageTags>
+        <Version>2.0.0</Version>
+        <AssemblyVersion>2.0.0.0</AssemblyVersion>
+        <FileVersion>2.0.0.0</FileVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>

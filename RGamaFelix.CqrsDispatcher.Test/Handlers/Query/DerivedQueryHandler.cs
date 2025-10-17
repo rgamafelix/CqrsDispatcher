@@ -5,11 +5,11 @@ namespace RGamaFelix.CqrsDispatcher.Test.Handlers.Query;
 
 public class DerivedQueryHandler : IQueryHandler<DerivedQueryRequest, TestQueryResponse>
 {
-  public Task<TestQueryResponse> HandleAsync(DerivedQueryRequest request, CancellationToken cancellationToken)
+  public Task<TestQueryResponse> HandleAsync(DerivedQueryRequest queryRequest, CancellationToken cancellationToken)
   {
     Thread.Sleep(Random.Shared.Next(5) * 100);
-    Console.WriteLine($"{GetType().Name} - {request} - HANDLING");
+    Console.WriteLine($"{GetType().Name} - {queryRequest} - HANDLING");
 
-    return Task.FromResult(new TestQueryResponse(request.StrValue + request.IntValue));
+    return Task.FromResult(new TestQueryResponse(queryRequest.StrValue + queryRequest.IntValue));
   }
 }

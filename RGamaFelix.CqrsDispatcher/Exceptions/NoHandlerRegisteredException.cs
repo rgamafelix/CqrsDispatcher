@@ -3,14 +3,15 @@ namespace RGamaFelix.CqrsDispatcher.Exceptions;
 /// <summary>Exception that is thrown when no handler is registered for a specific request type.</summary>
 /// <typeparam name="TRequest">
 ///   The type of the request for which the exception is thrown. Typically implements the
-///   <see cref="IRequest" /> interface.
+///   <see cref="IRequestBase" /> interface.
 /// </typeparam>
-public class NoHandlerRegisteredException<TRequest> : Exception
-  where TRequest : IRequest
+public class NoHandlerRegisteredException<TRequest> : Exception where TRequest : IRequestBase
 {
+  private const string DefaultErrorMessage = "No handler registered for request type {0}";
+
   /// <summary>
   ///   Represents an exception that is thrown when no handler is registered for a given request type that implements
-  ///   the <see cref="IRequest" /> interface.
+  ///   the <see cref="IRequestBase" /> interface.
   /// </summary>
   /// <typeparam name="TRequest">The type of the request for which the handler is missing.</typeparam>
   /// <remarks>
@@ -23,7 +24,7 @@ public class NoHandlerRegisteredException<TRequest> : Exception
 
   /// <summary>
   ///   Represents an exception that occurs when no handler is registered for a specific request of type
-  ///   <see cref="IRequest" />.
+  ///   <see cref="IRequestBase" />.
   /// </summary>
   /// <typeparam name="TRequest">The type of the request for which the handler is missing.</typeparam>
   /// <remarks>
@@ -37,7 +38,7 @@ public class NoHandlerRegisteredException<TRequest> : Exception
   /// <summary>Exception that is thrown when no handler is registered for a specific request type.</summary>
   /// <typeparam name="TRequest">
   ///   The type of the request for which the exception is thrown. Typically implements the
-  ///   <see cref="IRequest" /> interface.
+  ///   <see cref="IRequestBase" /> interface.
   /// </typeparam>
   /// <remarks>
   ///   This exception is used to indicate that a request in the request/handler pattern does not have a corresponding
@@ -46,6 +47,4 @@ public class NoHandlerRegisteredException<TRequest> : Exception
   public NoHandlerRegisteredException(string message, Exception innerException) : base(message, innerException)
   {
   }
-
-  private const string DefaultErrorMessage = "No handler registered for request type {0}";
 }

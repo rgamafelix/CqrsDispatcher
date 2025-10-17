@@ -10,4 +10,4 @@ namespace RGamaFelix.CqrsDispatcher.Command;
 ///   data retrieval. This interface serves as a marker interface, potentially extended by concrete implementations to
 ///   include additional properties or methods specific to the respective command.
 /// </remarks>
-public interface ICommandRequest : IRequest;
+public interface ICommandRequest : IRequestBase;

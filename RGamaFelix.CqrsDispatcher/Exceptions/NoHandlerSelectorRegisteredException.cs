@@ -3,11 +3,12 @@ namespace RGamaFelix.CqrsDispatcher.Exceptions;
 /// <summary>Exception that is thrown when no handler selector is registered for a specific request type.</summary>
 /// <typeparam name="TRequest">
 ///   The type of the request for which the exception is thrown. Must implement the
-///   <see cref="IRequest" /> interface.
+///   <see cref="IRequestBase" /> interface.
 /// </typeparam>
-public class NoHandlerSelectorRegisteredException<TRequest> : Exception
-  where TRequest : IRequest
+public class NoHandlerSelectorRegisteredException<TRequest> : Exception where TRequest : IRequestBase
 {
+  private const string DefaultErrorMessage = "No handler selector registered for request type {0}";
+
   /// <summary>
   ///   Initializes a new instance of the <see cref="NoHandlerSelectorRegisteredException{TRequest}" /> class with a
   ///   default error message.
@@ -34,6 +35,4 @@ public class NoHandlerSelectorRegisteredException<TRequest> : Exception
   public NoHandlerSelectorRegisteredException(string message, Exception innerException) : base(message, innerException)
   {
   }
-
-  private const string DefaultErrorMessage = "No handler selector registered for request type {0}";
 }

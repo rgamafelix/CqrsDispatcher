@@ -1,8 +1,5 @@
 ﻿<Solution>
-    <Project Path="RGamaFelix.CqrsDispatcher.Config\RGamaFelix.CqrsDispatcher.Config.csproj" Type="Classic C#"/>
     <Project Path="RGamaFelix.CqrsDispatcher.Test\RGamaFelix.CqrsDispatcher.Test.csproj" Type="Classic C#"/>
-    <Project Path="RGamaFelix.CqrsDispatcher.Validator.Config\RGamaFelix.CqrsDispatcher.Validator.Config.csproj"
-             Type="Classic C#"/>
     <Project Path="RGamaFelix.CqrsDispatcher.Validator\RGamaFelix.CqrsDispatcher.Validator.csproj" Type="Classic C#"/>
     <Project Path="RGamaFelix.CqrsDispatcher\RGamaFelix.CqrsDispatcher.csproj" Type="Classic C#"/>
 </Solution>

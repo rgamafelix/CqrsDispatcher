@@ -8,16 +8,21 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="6.0.2"/>
+        <PackageReference Include="coverlet.collector" Version="6.0.4">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="FluentValidation" Version="12.0.0"/>
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0"/>
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.8"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.8"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0"/>
-        <PackageReference Include="NSubstitute" Version="5.3.0" />
-        <PackageReference Include="RGamaFelix.ServiceResponse" Version="2.0.0"/>
-        <PackageReference Include="xunit" Version="2.9.2"/>
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
+        <PackageReference Include="NSubstitute" Version="5.3.0"/>
+        <PackageReference Include="xunit" Version="2.9.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
@@ -25,8 +30,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RGamaFelix.CqrsDispatcher.Config\RGamaFelix.CqrsDispatcher.Config.csproj"/>
         <ProjectReference Include="..\RGamaFelix.CqrsDispatcher\RGamaFelix.CqrsDispatcher.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="TestRequest\BaseCommandBaseRequest.cs"/>
+        <Compile Remove="TestRequest\SelectableRequest.cs"/>
     </ItemGroup>
 
 </Project>
