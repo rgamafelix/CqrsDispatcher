@@ -1,6 +1,6 @@
 namespace RGamaFelix.CqrsDispatcher;
 
-/// <summary>Marker interface representing a request in the CQRS pattern.</summary>
+/// <summary>NTO TO BE USED BY APPLICATIONS. Marker interface representing a request in the CQRS pattern.</summary>
 /// <remarks>
 ///   This Type Should NOT be used directly. The <see cref="IRequestBase" /> interface serves as a base type for all
 ///   command and query requests in the CqrsDispatcher architecture. It is designed to establish a common contract for

@@ -1,6 +1,6 @@
 using RGamaFelix.CqrsDispatcher.Command.Handler;
 
-namespace RGamaFelix.CqrsDispatcher.Command.Extension.Handler;
+namespace RGamaFelix.CqrsDispatcher.Command.Pipeline.Handler;
 
 /// <summary>
 ///   Represents a behavior pipeline that can be executed around command handlers. This interface allows for
@@ -26,7 +26,7 @@ public interface ICommandHandlerExtension<THandler, TRequest> where THandler : I
   ///   The value is nullable to allow for scenarios where the order is not explicitly set or not applicable. A
   ///   default value, if any, should be assigned by implementations to maintain a predictable execution flow.
   /// </remarks>
-  internal int? Order { get; }
+  public int? Order { get; }
 
   /// <summary>
   ///   Processes the specified command request using the provided handler and executes the next behavior in the
@@ -37,11 +37,11 @@ public interface ICommandHandlerExtension<THandler, TRequest> where THandler : I
   /// <param name="next">The next delegate in the handling pipeline to be executed after the current handling logic.</param>
   /// <param name="cancellationToken">A token that can be used to monitor cancellation requests.</param>
   /// <returns>A task that represents the asynchronous operation of handling the command request.</returns>
-  internal Task Handle(TRequest request, THandler handler, Func<TRequest, CancellationToken, Task> next,
+  public Task Handle(TRequest request, THandler handler, Func<TRequest, CancellationToken, Task> next,
     CancellationToken cancellationToken);
 
   /// <summary>Determines whether the behavior pipeline should execute for the provided command request.</summary>
   /// <param name="request">The command request to evaluate.</param>
   /// <returns><c>true</c> if the behavior pipeline should execute for the provided command request; otherwise, <c>false</c>.</returns>
-  internal bool ShouldRun(TRequest request);
+  public bool ShouldRun(TRequest request);
 }

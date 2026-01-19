@@ -3,7 +3,6 @@
     <PropertyGroup>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <TargetFramework>net9.0</TargetFramework>
         <LangVersion>latestmajor</LangVersion>
         <Title>CqrsDispatcher</Title>
         <Authors>Rodrigo Gama Felix &lt;rodrigo@gamafelix.com.br&gt;</Authors>
@@ -18,6 +17,7 @@
         <AssemblyVersion>2.0.0.0</AssemblyVersion>
         <FileVersion>2.0.0.0</FileVersion>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <TargetFrameworks>net9.0;net10.0;net8.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -37,8 +37,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9"/>
-        <PackageReference Include="Scrutor" Version="6.1.0"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
+        <PackageReference Include="Scrutor" Version="7.0.0" />
     </ItemGroup>
 
 </Project>

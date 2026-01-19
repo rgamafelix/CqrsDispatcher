@@ -1,4 +1,4 @@
-namespace RGamaFelix.CqrsDispatcher.Command.Extension.Request;
+namespace RGamaFelix.CqrsDispatcher.Command.Pipeline.Request;
 
 /// <summary>
 ///   Defines the behavior pipeline for handling command requests. Command request behaviors allow for the addition

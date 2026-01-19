@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 using RGamaFelix.CqrsDispatcher.Query;
-using RGamaFelix.CqrsDispatcher.Query.Extension.Request;
+using RGamaFelix.CqrsDispatcher.Query.Pipeline.Request;
 
 namespace RGamaFelix.CqrsDispatcher.Validator;
 

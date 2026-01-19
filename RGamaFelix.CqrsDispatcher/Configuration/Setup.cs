@@ -1,11 +1,11 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
-using RGamaFelix.CqrsDispatcher.Command.Extension.Handler;
-using RGamaFelix.CqrsDispatcher.Command.Extension.Request;
 using RGamaFelix.CqrsDispatcher.Command.Handler;
-using RGamaFelix.CqrsDispatcher.Query.Extension.Handler;
-using RGamaFelix.CqrsDispatcher.Query.Extension.Request;
+using RGamaFelix.CqrsDispatcher.Command.Pipeline.Handler;
+using RGamaFelix.CqrsDispatcher.Command.Pipeline.Request;
 using RGamaFelix.CqrsDispatcher.Query.Handler;
+using RGamaFelix.CqrsDispatcher.Query.Pipeline.Handler;
+using RGamaFelix.CqrsDispatcher.Query.Pipeline.Request;
 
 namespace RGamaFelix.CqrsDispatcher.Configuration;
 

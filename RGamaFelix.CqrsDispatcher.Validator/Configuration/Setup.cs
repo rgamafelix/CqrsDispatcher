@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using RGamaFelix.CqrsDispatcher.Command.Extension.Request;
-using RGamaFelix.CqrsDispatcher.Query.Extension.Request;
+using RGamaFelix.CqrsDispatcher.Command.Pipeline.Request;
+using RGamaFelix.CqrsDispatcher.Query.Pipeline.Request;
 
 namespace RGamaFelix.CqrsDispatcher.Validator.Configuration;
 

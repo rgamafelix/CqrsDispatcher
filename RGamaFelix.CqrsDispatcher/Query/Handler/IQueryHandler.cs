@@ -1,5 +1,3 @@
-using RGamaFelix.CqrsDispatcher.Command;
-
 namespace RGamaFelix.CqrsDispatcher.Query.Handler;
 
 /// <summary>
@@ -17,5 +15,20 @@ public interface IQueryHandler<TRequest, TResponse> where TRequest : IQueryReque
   ///   A task representing the asynchronous operation that resolves to the response of type
   ///   <typeparamref name="TResponse" />.
   /// </returns>
+  [Obsolete("Method deprecated due to naming normalization. Use Handle instead.")]
   Task<TResponse> HandleAsync(TRequest request, CancellationToken cancellationToken = default);
+
+  /// <summary>Handles the given query request asynchronously and returns the corresponding response.</summary>
+  /// <param name="request">The query request of type <typeparamref name="TRequest" /> to process.</param>
+  /// <param name="cancellationToken">A CancellationToken to observe while waiting for the task to complete.</param>
+  /// <returns>
+  ///   A task representing the asynchronous operation that resolves to the response of type
+  ///   <typeparamref name="TResponse" />.
+  /// </returns>
+  Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken = default)
+  {
+#pragma warning disable CS0618 // Type or member is obsolete
+    return HandleAsync(request, cancellationToken);
+#pragma warning restore CS0618 // Type or member is obsolete
+  }
 }

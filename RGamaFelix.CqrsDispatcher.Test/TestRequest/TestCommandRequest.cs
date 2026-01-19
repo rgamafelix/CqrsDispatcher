@@ -2,4 +2,4 @@ using RGamaFelix.CqrsDispatcher.Command;
 
 namespace RGamaFelix.CqrsDispatcher.Test.TestRequest;
 
-public record NullCommandCommandRequest : ICommandRequest;
+public record TestCommandRequest : ICommandRequest;

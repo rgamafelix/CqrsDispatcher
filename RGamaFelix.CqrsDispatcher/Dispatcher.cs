@@ -3,15 +3,15 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RGamaFelix.CqrsDispatcher.Command;
-using RGamaFelix.CqrsDispatcher.Command.Extension.Handler;
-using RGamaFelix.CqrsDispatcher.Command.Extension.Request;
 using RGamaFelix.CqrsDispatcher.Command.Handler;
+using RGamaFelix.CqrsDispatcher.Command.Pipeline.Handler;
+using RGamaFelix.CqrsDispatcher.Command.Pipeline.Request;
 using RGamaFelix.CqrsDispatcher.Exceptions;
 using RGamaFelix.CqrsDispatcher.Query;
-using RGamaFelix.CqrsDispatcher.Query.Extension.Handler;
-using RGamaFelix.CqrsDispatcher.Query.Extension.Request;
 using RGamaFelix.CqrsDispatcher.Query.Handler;
 using RGamaFelix.CqrsDispatcher.Query.Handler.Selector;
+using RGamaFelix.CqrsDispatcher.Query.Pipeline.Handler;
+using RGamaFelix.CqrsDispatcher.Query.Pipeline.Request;
 
 namespace RGamaFelix.CqrsDispatcher;
 
@@ -40,15 +40,22 @@ public class Dispatcher
   public Task Publish<TRequest>(TRequest request, Action<Exception>? onException = null,
     CancellationToken cancellationToken = default) where TRequest : ICommandRequest
   {
+    using var loggerScope = _logger?.BeginScope(new Dictionary<string, object>
+    {
+      ["RequestType"] = typeof(TRequest).Name
+    });
+
+    if (request is null)
+    {
+      _logger?.LogError("Null request");
+
+      throw new ArgumentNullException(nameof(request));
+    }
+
     return Task.Run(async () =>
     {
       try
       {
-        using var loggerScope = _logger?.BeginScope(new Dictionary<string, object>
-        {
-          ["RequestType"] = typeof(TRequest).Name
-        });
-
         using var serviceScope = _serviceProvider.CreateScope();
         var scopedProvider = serviceScope.ServiceProvider;
         await InternalPublish(request, scopedProvider, cancellationToken).ConfigureAwait(false);
@@ -62,9 +69,15 @@ public class Dispatcher
       catch (Exception ex)
       {
         _logger?.LogError(ex, "An error occurred while processing the command request");
-        onException?.Invoke(ex);
 
-        throw;
+        if (onException != null)
+        {
+          onException.Invoke(ex);
+        }
+        else
+        {
+          throw;
+        }
       }
     }, cancellationToken);
   }
@@ -81,8 +94,18 @@ public class Dispatcher
   {
     try
     {
-      ArgumentNullException.ThrowIfNull(request);
-      using var loggerScope = _logger?.BeginScope(typeof(TRequest).Name);
+      using var loggerScope = _logger?.BeginScope(new Dictionary<string, object>
+      {
+        ["RequestType"] = typeof(TRequest).Name
+      });
+
+      if (request is null)
+      {
+        _logger?.LogError("Null request");
+
+        throw new ArgumentNullException(nameof(request));
+      }
+
       var handler = GetQueryHandler<TRequest, TResponse>(request);
       var handlerExecutionPipeline = GetQueryHandlerBehaviors(request, handler);
       var requestBehaviors = GetQueryRequestBehaviors<TRequest, TResponse>(request);
@@ -232,15 +255,14 @@ public class Dispatcher
   private List<T> GetBehaviors<T>(Type behaviorGenericType, Type requestType, object request, string logMessage,
     IServiceProvider provider)
   {
-    var behaviors = provider.GetServices(behaviorGenericType)
-      .Where(p => SatisfyCondition(p, request))
-      .OrderBy(GetExecutionOrder)
-      .Cast<T>()
-      .ToList();
+    var behaviors = provider.GetServices(behaviorGenericType);
+    var aux1 = behaviors.Where(p => SatisfyCondition(p, request));
+    var aux2 = aux1.OrderByDescending(GetExecutionOrder);
+    var aux3 = aux2.Cast<T>();
+    var aux4 = aux3.ToList();
+    _logger?.LogDebug("{amount} {logMessage} found for {requestType}", aux4.Count, logMessage, requestType);
 
-    _logger?.LogDebug("{amount} {logMessage} found for {requestType}", behaviors.Count, logMessage, requestType);
-
-    return behaviors;
+    return aux4;
   }
 
   private IQueryHandler<TRequest, TResponse> GetQueryHandler<TRequest, TResponse>(TRequest request)
@@ -282,7 +304,7 @@ public class Dispatcher
       typeof(IQueryHandlerExtension<,,>).MakeGenericType(handlerType, typeof(TRequest), typeof(TResponse)),
       typeof(TRequest), request, "query handler pipelines", _serviceProvider);
 
-    Func<TRequest, CancellationToken, Task<TResponse>> handlerDelegate = handler.HandleAsync;
+    Func<TRequest, CancellationToken, Task<TResponse>> handlerDelegate = handler.Handle;
 
     return BuildPipeline(handlerDelegate, handlerPipelines,
       (behavior, next) => (r, ct) =>
@@ -308,7 +330,7 @@ public class Dispatcher
     var requestPipelines = provider.GetServices(behaviorType)
       .Where(behavior => IsCommandBehaviorCompatible(behavior, requestType))
       .Where(p => SatisfyCondition(p, request))
-      .OrderBy(GetExecutionOrder)
+      .OrderByDescending(GetExecutionOrder)
       .ToList();
 
     _logger?.LogDebug("{amount} command request pipelines found for {requestType}", requestPipelines.Count,
