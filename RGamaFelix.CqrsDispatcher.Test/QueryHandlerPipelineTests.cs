@@ -2,29 +2,35 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using RGamaFelix.CqrsDispatcher.Query.Handler;
 using RGamaFelix.CqrsDispatcher.Query.Pipeline.Handler;
-using RGamaFelix.CqrsDispatcher.Test.Handlers;
 
 namespace RGamaFelix.CqrsDispatcher.Test.TestRequest;
 
-public class QueryHandlerPipelineTests
+public class QueryPipelineTests
 {
   [Fact]
-  public async Task QueryHandlerPipelineShouldExecuteExtensionsBeforeHandler()
+  public async Task PipelineShouldExecuteQueryHandlerExtensionsBeforeHandler()
   {
     // Arrange
     var services = TestHelper.CreateCleanServices();
     var handler = Substitute.For<IQueryHandler<TestQueryRequest, TestQueryResponse>>();
 
     var extension = Substitute
-      .For<IQueryHandler<TestQueryRequest, TestQueryResponse>, TestQueryRequest, TestQueryResponse>();
+      .For<IQueryHandlerExtension<IQueryHandler<TestQueryRequest, TestQueryResponse>, TestQueryRequest,
+        TestQueryResponse>>();
+
+    var handlerServiceType = typeof(IQueryHandler<TestQueryRequest, TestQueryResponse>);
 
     services.AddScoped(
-      typeof(IQueryHandlerExtension<IQueryHandler<TestQueryRequest, TestQueryResponse>, TestQueryRequest,
-        TestQueryResponse>), _ => extension);
+      typeof(IQueryHandlerExtension<,,>).MakeGenericType(handlerServiceType, typeof(TestQueryRequest),
+        typeof(TestQueryResponse)), _ => extension);
 
-    services.AddScoped(typeof(IQueryHandler<TestQueryRequest, TestQueryResponse>), _ => handler);
+    services.AddScoped<IQueryHandler<TestQueryRequest, TestQueryResponse>>(_ => handler);
 
-    extension.Handle(Arg.Any<TestQueryRequest>(), Arg.Any<CancellationToken>())
+    handler.Handle(Arg.Any<TestQueryRequest>(), Arg.Any<CancellationToken>())
+      .Returns(callInfo => Task.FromResult(new TestQueryResponse()));
+
+    extension.Handle(Arg.Any<TestQueryRequest>(), Arg.Any<IQueryHandler<TestQueryRequest, TestQueryResponse>>(),
+        Arg.Any<Func<TestQueryRequest, CancellationToken, Task<TestQueryResponse>>>(), Arg.Any<CancellationToken>())
       .Returns(async callInfo =>
       {
         var next = callInfo.Arg<Func<TestQueryRequest, CancellationToken, Task<TestQueryResponse>>>();
@@ -32,9 +38,7 @@ public class QueryHandlerPipelineTests
         return await next(callInfo.Arg<TestQueryRequest>(), callInfo.Arg<CancellationToken>());
       });
 
-    handler.Handle(Arg.Any<TestQueryRequest>(), Arg.Any<CancellationToken>())
-      .Returns(callInfo => Task.FromResult(new TestQueryResponse()));
-
+    extension.ShouldRun(Arg.Any<TestQueryRequest>()).Returns(true);
     await using var provider = services.BuildServiceProvider();
     var dispatcher = new Dispatcher(provider, null);
 
@@ -44,7 +48,8 @@ public class QueryHandlerPipelineTests
     // Assert
     Received.InOrder(() =>
     {
-      extension.Handle(Arg.Any<TestQueryRequest>(), Arg.Any<CancellationToken>());
+      extension.Handle(Arg.Any<TestQueryRequest>(), Arg.Any<IQueryHandler<TestQueryRequest, TestQueryResponse>>(),
+        Arg.Any<Func<TestQueryRequest, CancellationToken, Task<TestQueryResponse>>>(), Arg.Any<CancellationToken>());
 
       handler.Handle(Arg.Any<TestQueryRequest>(), Arg.Any<CancellationToken>());
     });

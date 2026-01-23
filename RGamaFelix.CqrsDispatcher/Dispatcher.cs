@@ -107,14 +107,15 @@ public class Dispatcher
       }
 
       var handler = GetQueryHandler<TRequest, TResponse>(request);
-      var handlerExecutionPipeline = GetQueryHandlerBehaviors(request, handler);
-      var requestBehaviors = GetQueryRequestBehaviors<TRequest, TResponse>(request);
+      var handlerExecutionPipeline = GetQueryHandlerExtensions(request, handler);
+      var requestExtensions = GetQueryRequestExtensions<TRequest, TResponse>(request);
 
-      var completePipeline = BuildPipeline(handlerExecutionPipeline, requestBehaviors,
-        (behavior, next) => (req, ct) =>
-          behavior != null
-            ? ((IQueryRequestExtension<TRequest, TResponse>)behavior).Handle(req, next, ct)
-            : throw new NullReferenceException($"Null behavior in query pipeline for request {typeof(TRequest).Name}"));
+      var completePipeline = BuildPipeline(handlerExecutionPipeline, requestExtensions,
+        (extension, next) => (req, ct) =>
+          extension != null
+            ? ((IQueryRequestExtension<TRequest, TResponse>)extension).Handle(req, next, ct)
+            : throw new NullReferenceException(
+              $"Null extension in query pipeline for request {typeof(TRequest).Name}"));
 
       return await completePipeline(request, cancellationToken);
     }
@@ -126,14 +127,14 @@ public class Dispatcher
     }
   }
 
-  private static TDelegate BuildPipeline<TDelegate>(TDelegate coreHandler, IEnumerable<object?> behaviors,
-    Func<object?, TDelegate, TDelegate> wrapBehavior)
+  private static TDelegate BuildPipeline<TDelegate>(TDelegate coreHandler, IEnumerable<object?> extensions,
+    Func<object?, TDelegate, TDelegate> wrapExtension)
   {
     var pipeline = coreHandler;
 
-    foreach (var behavior in behaviors)
+    foreach (var extension in extensions)
     {
-      pipeline = wrapBehavior(behavior, pipeline);
+      pipeline = wrapExtension(extension, pipeline);
     }
 
     return pipeline;
@@ -152,33 +153,33 @@ public class Dispatcher
     return handlers.Count == 0 ? throw new NoHandlerRegisteredException<TRequest>() : handlers;
   }
 
-  private static int GetExecutionOrder(object? behavior)
+  private static int GetExecutionOrder(object? extension)
   {
-    if (behavior is null)
+    if (extension is null)
     {
       return 0;
     }
 
-    var behaviorType = behavior.GetType();
-    var orderProperty = _orderPropertyCache.GetOrAdd(behaviorType, type => type.GetProperty("Order"));
+    var extensionType = extension.GetType();
+    var orderProperty = _orderPropertyCache.GetOrAdd(extensionType, type => type.GetProperty("Order"));
 
     if (orderProperty is null)
     {
       return 0;
     }
 
-    return (int?)orderProperty.GetValue(behavior, null) ?? 0;
+    return (int?)orderProperty.GetValue(extension, null) ?? 0;
   }
 
-  private static bool IsCommandBehaviorCompatible(object? behavior, Type requestType)
+  private static bool IsCommandExtensionCompatible(object? extension, Type requestType)
   {
-    if (behavior is null)
+    if (extension is null)
     {
       return false;
     }
 
-    var behaviorTypeInfo = behavior.GetType();
-    var interfaces = _interfaceCache.GetOrAdd(behaviorTypeInfo, type => type.GetInterfaces());
+    var extensionTypeInfo = extension.GetType();
+    var interfaces = _interfaceCache.GetOrAdd(extensionTypeInfo, type => type.GetInterfaces());
 
     var interfaceType = interfaces.FirstOrDefault(i =>
       i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandRequestExtension<>));
@@ -206,22 +207,22 @@ public class Dispatcher
     return handledType != null && handledType.IsAssignableFrom(requestType);
   }
 
-  private static bool SatisfyCondition(object? behavior, object request)
+  private static bool SatisfyCondition(object? extension, object request)
   {
-    if (behavior is null)
+    if (extension is null)
     {
       return false;
     }
 
-    var behaviorType = behavior.GetType();
-    var shouldRunMethod = _shouldRunMethodCache.GetOrAdd(behaviorType, type => type.GetMethod("ShouldRun"));
+    var extensionType = extension.GetType();
+    var shouldRunMethod = _shouldRunMethodCache.GetOrAdd(extensionType, type => type.GetMethod("ShouldRun"));
 
     if (shouldRunMethod is null)
     {
       return true;
     }
 
-    var result = shouldRunMethod.Invoke(behavior, [request]);
+    var result = shouldRunMethod.Invoke(extension, [request]);
 
     return result is true;
   }
@@ -233,18 +234,18 @@ public class Dispatcher
     {
       var handlerType = handler.GetType();
 
-      var handlerPipelines = GetBehaviors<dynamic>(
+      var handlerPipelines = GetExtensions<dynamic>(
         typeof(ICommandHandlerExtension<,>).MakeGenericType(handlerType, typeof(TRequest)), typeof(TRequest),
         originalRequest, "command handler pipelines", provider);
 
       var handlerDelegate = (handler as ICommandHandler<TRequest>)!.Handle;
 
       var pipeline = BuildPipeline(handlerDelegate, handlerPipelines,
-        (behavior, next) => (r, ct) =>
-          behavior != null
-            ? (Task)((dynamic)behavior).Handle((dynamic)r, (dynamic)handler, next, ct)
+        (extension, next) => (r, ct) =>
+          extension != null
+            ? (Task)((dynamic)extension).Handle((dynamic)r, (dynamic)handler, next, ct)
             : throw new NullReferenceException(
-              $"Null behavior in command pipeline for request {typeof(TRequest).Name}"));
+              $"Null extension in command pipeline for request {typeof(TRequest).Name}"));
 
       await pipeline(req, token);
     });
@@ -252,11 +253,11 @@ public class Dispatcher
     await Task.WhenAll(tasks);
   }
 
-  private List<T> GetBehaviors<T>(Type behaviorGenericType, Type requestType, object request, string logMessage,
+  private List<T> GetExtensions<T>(Type extensionGenericType, Type requestType, object request, string logMessage,
     IServiceProvider provider)
   {
-    var behaviors = provider.GetServices(behaviorGenericType);
-    var aux1 = behaviors.Where(p => SatisfyCondition(p, request));
+    var extensions = provider.GetServices(extensionGenericType);
+    var aux1 = extensions.Where(p => SatisfyCondition(p, request));
     var aux2 = aux1.OrderByDescending(GetExecutionOrder);
     var aux3 = aux2.Cast<T>();
     var aux4 = aux3.ToList();
@@ -295,40 +296,46 @@ public class Dispatcher
     }
   }
 
-  private Func<TRequest, CancellationToken, Task<TResponse>> GetQueryHandlerBehaviors<TRequest, TResponse>(
+  private Func<TRequest, CancellationToken, Task<TResponse>> GetQueryHandlerExtensions<TRequest, TResponse>(
     TRequest request, IQueryHandler<TRequest, TResponse> handler) where TRequest : IQueryRequest<TResponse>
   {
-    var handlerType = handler.GetType();
+    var handlerRuntimeType = handler.GetType();
+    var handlerServiceType = typeof(IQueryHandler<TRequest, TResponse>);
 
-    var handlerPipelines = GetBehaviors<dynamic>(
-      typeof(IQueryHandlerExtension<,,>).MakeGenericType(handlerType, typeof(TRequest), typeof(TResponse)),
+    var runtimeTypePipelines = GetExtensions<dynamic>(
+      typeof(IQueryHandlerExtension<,,>).MakeGenericType(handlerRuntimeType, typeof(TRequest), typeof(TResponse)),
       typeof(TRequest), request, "query handler pipelines", _serviceProvider);
 
+    var serviceTypePipelines = GetExtensions<dynamic>(
+      typeof(IQueryHandlerExtension<,,>).MakeGenericType(handlerServiceType, typeof(TRequest), typeof(TResponse)),
+      typeof(TRequest), request, "query handler pipelines", _serviceProvider);
+
+    var handlerPipelines = runtimeTypePipelines.Concat(serviceTypePipelines).ToList();
     Func<TRequest, CancellationToken, Task<TResponse>> handlerDelegate = handler.Handle;
 
     return BuildPipeline(handlerDelegate, handlerPipelines,
-      (behavior, next) => (r, ct) =>
-        behavior != null
-          ? (Task<TResponse>)((dynamic)behavior).Handle((dynamic)r, (dynamic)handler, next, ct)
-          : throw new NullReferenceException($"Null behavior in query pipeline for request {typeof(TRequest).Name}"));
+      (extension, next) => (r, ct) =>
+        extension != null
+          ? (Task<TResponse>)((dynamic)extension).Handle((dynamic)r, (dynamic)handler, next, ct)
+          : throw new NullReferenceException($"Null extension in query pipeline for request {typeof(TRequest).Name}"));
   }
 
-  private List<IQueryRequestExtension<TRequest, TResponse>> GetQueryRequestBehaviors<TRequest, TResponse>(
+  private List<IQueryRequestExtension<TRequest, TResponse>> GetQueryRequestExtensions<TRequest, TResponse>(
     TRequest request) where TRequest : IQueryRequest<TResponse>
   {
-    return GetBehaviors<IQueryRequestExtension<TRequest, TResponse>>(
+    return GetExtensions<IQueryRequestExtension<TRequest, TResponse>>(
       typeof(IQueryRequestExtension<,>).MakeGenericType(typeof(TRequest), typeof(TResponse)), typeof(TRequest), request,
       "query request pipelines", _serviceProvider);
   }
 
-  private List<object?> GetRequestCommandBehaviors<TRequest>(TRequest request, IServiceProvider provider)
+  private List<object?> GetRequestCommandExtensions<TRequest>(TRequest request, IServiceProvider provider)
     where TRequest : ICommandRequest
   {
     var requestType = typeof(TRequest);
-    var behaviorType = typeof(ICommandRequestExtension<>).MakeGenericType(requestType);
+    var extensionType = typeof(ICommandRequestExtension<>).MakeGenericType(requestType);
 
-    var requestPipelines = provider.GetServices(behaviorType)
-      .Where(behavior => IsCommandBehaviorCompatible(behavior, requestType))
+    var requestPipelines = provider.GetServices(extensionType)
+      .Where(extension => IsCommandExtensionCompatible(extension, requestType))
       .Where(p => SatisfyCondition(p, request))
       .OrderByDescending(GetExecutionOrder)
       .ToList();
@@ -343,12 +350,12 @@ public class Dispatcher
     CancellationToken cancellationToken) where TRequest : ICommandRequest
   {
     var handlers = GetCommandHandlers<TRequest>(provider);
-    var requestPipelines = GetRequestCommandBehaviors(request, provider);
+    var requestPipelines = GetRequestCommandExtensions(request, provider);
 
     var fullPipeline = BuildPipeline(
       (Func<TRequest, CancellationToken, Task>)((req, token) => AllHandlers(req, handlers, request, provider, token)),
       requestPipelines,
-      (behavior, next) => (r, ct) => ((ICommandRequestExtension<TRequest>)behavior!).Handle(r, next, ct));
+      (extension, next) => (r, ct) => ((ICommandRequestExtension<TRequest>)extension!).Handle(r, next, ct));
 
     await fullPipeline(request, cancellationToken);
   }

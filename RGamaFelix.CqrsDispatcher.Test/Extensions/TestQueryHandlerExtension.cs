@@ -1,7 +1,6 @@
 using RGamaFelix.CqrsDispatcher.Query;
 using RGamaFelix.CqrsDispatcher.Query.Handler;
 using RGamaFelix.CqrsDispatcher.Query.Pipeline.Handler;
-using RGamaFelix.CqrsDispatcher.Test.TestRequest;
 
 namespace RGamaFelix.CqrsDispatcher.Test.Handlers;
 
@@ -17,5 +16,8 @@ public class
     return await next(request, cancellationToken);
   }
 
-  public bool ShouldRun(TRequest request) => true;
+  public bool ShouldRun(TRequest request)
+  {
+    return true;
+  }
 }
