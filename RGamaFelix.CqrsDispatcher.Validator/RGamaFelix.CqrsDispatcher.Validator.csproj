@@ -7,7 +7,7 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Title>CqrsDispatcher</Title>
         <Authors>Rodrigo Gama Felix &lt;rodrigo@gamafelix.com.br&gt;</Authors>
-        <Description></Description>
+        <Description>A request validation extension for the CqrsDIspatcher Framework</Description>
         <Copyright>Rodrigo Gama Felix&lt;rodrigo@gamafelix.com.br&gt;@2025</Copyright>
         <PackageProjectUrl>https://github.com/rgamafelix/CqrsDispatcher</PackageProjectUrl>
         <RepositoryUrl>https://github.com/rgamafelix/CqrsDispatcher</RepositoryUrl>
@@ -35,6 +35,9 @@
 
     <ItemGroup>
         <PackageReference Include="FluentValidation" Version="12.1.1"/>
+        <PackageReference Condition="'$(TargetFramework)' == 'net10.0'" Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5"/>
+        <PackageReference Condition="'$(TargetFramework)' == 'net9.0'" Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.14"/>
+        <PackageReference Condition="'$(TargetFramework)' == 'net8.0'" Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2"/>
     </ItemGroup>
 
     <ItemGroup>
