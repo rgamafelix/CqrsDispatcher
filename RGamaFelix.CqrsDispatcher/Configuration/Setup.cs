@@ -24,6 +24,7 @@ public static class Setup
     typeof(ICommandRequestExtension<>),
     typeof(ICommandHandlerExtension<,>)
   ];
+
   /// <summary>Adds the CQRS Dispatcher Framework to the service collection, including core mediator configuration.</summary>
   /// <param name="services">The service collection to which the CQRS Dispatcher Framework will be added.</param>
   /// <returns>The updated service collection with the CQRS Dispatcher Framework registered.</returns>

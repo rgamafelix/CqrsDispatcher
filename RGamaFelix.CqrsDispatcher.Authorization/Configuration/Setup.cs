@@ -16,14 +16,6 @@ public static class Setup
   private const string _scopeClaimType = "scope";
   private const string _scpClaimType = "scp";
 
-  private static void ThrowIfNullOrEmpty<T>(T[]? values, string paramName, string message)
-  {
-    if (values is null || values.Length == 0)
-    {
-      throw new ArgumentException(message, paramName);
-    }
-  }
-
   private static bool HasAnyRequiredValue(HashSet<string> requiredValues, IEnumerable<Claim> claimValues)
   {
     foreach (var claim in claimValues)
@@ -40,6 +32,14 @@ public static class Setup
     }
 
     return false;
+  }
+
+  private static void ThrowIfNullOrEmpty<T>(T[]? values, string paramName, string message)
+  {
+    if (values is null || values.Length == 0)
+    {
+      throw new ArgumentException(message, paramName);
+    }
   }
 
   /// <summary>
@@ -65,7 +65,6 @@ public static class Setup
     {
       ArgumentException.ThrowIfNullOrWhiteSpace(policyName, nameof(policyName));
       ThrowIfNullOrEmpty(requiredScopes, nameof(requiredScopes), "At least one scope must be provided.");
-
       var required = new HashSet<string>(requiredScopes, StringComparer.OrdinalIgnoreCase);
 
       return services.AddAuthorizationCore(options => options.AddPolicy(policyName, policy =>
@@ -83,7 +82,7 @@ public static class Setup
     /// </summary>
     public IServiceCollection AddAuthenticatedPolicy(string policyName)
     {
-      ArgumentException.ThrowIfNullOrWhiteSpace(policyName, nameof(policyName));
+      ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
 
       return services.AddAuthorizationCore(options =>
         options.AddPolicy(policyName, policy => policy.RequireAuthenticatedUser()));
@@ -122,8 +121,8 @@ public static class Setup
     /// </summary>
     public IServiceCollection AddClaimPolicy(string policyName, string claimType, params string[] allowedValues)
     {
-      ArgumentException.ThrowIfNullOrWhiteSpace(policyName, nameof(policyName));
-      ArgumentException.ThrowIfNullOrWhiteSpace(claimType, nameof(claimType));
+      ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+      ArgumentException.ThrowIfNullOrWhiteSpace(claimType);
 
       return services.AddAuthorizationCore(options => options.AddPolicy(policyName, policy =>
       {
@@ -145,7 +144,7 @@ public static class Setup
     /// </summary>
     public IServiceCollection AddRolePolicy(string policyName, params string[] requiredRoles)
     {
-      ArgumentException.ThrowIfNullOrWhiteSpace(policyName, nameof(policyName));
+      ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
       ThrowIfNullOrEmpty(requiredRoles, nameof(requiredRoles), "At least one role must be provided.");
 
       return services.AddAuthorizationCore(options => options.AddPolicy(policyName, policy =>

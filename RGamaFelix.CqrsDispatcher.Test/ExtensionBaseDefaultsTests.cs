@@ -1,8 +1,6 @@
-using NSubstitute;
 using RGamaFelix.CqrsDispatcher.Command.Handler;
 using RGamaFelix.CqrsDispatcher.Command.Pipeline.Handler;
 using RGamaFelix.CqrsDispatcher.Command.Pipeline.Request;
-using RGamaFelix.CqrsDispatcher.Query;
 using RGamaFelix.CqrsDispatcher.Query.Handler;
 using RGamaFelix.CqrsDispatcher.Query.Pipeline.Handler;
 using RGamaFelix.CqrsDispatcher.Query.Pipeline.Request;
@@ -12,35 +10,18 @@ namespace RGamaFelix.CqrsDispatcher.Test;
 
 public class ExtensionBaseDefaultsTests
 {
-  private sealed class ConcreteCommandRequestExtension : CommandRequestExtensionBase<TestCommandRequest>
+  [Fact]
+  public void CommandHandlerExtensionBaseShouldHaveDefaultOrderOfZero()
   {
-    public override Task Handle(TestCommandRequest request, Func<TestCommandRequest, CancellationToken, Task> next,
-      CancellationToken cancellationToken) => next(request, cancellationToken);
+    var sut = new ConcreteCommandHandlerExtension();
+    Assert.Equal(0, sut.Order);
   }
 
-  private sealed class ConcreteCommandHandlerExtension
-    : CommandHandlerExtensionBase<ICommandHandler<TestCommandRequest>, TestCommandRequest>
+  [Fact]
+  public void CommandHandlerExtensionBaseShouldReturnTrueForShouldRun()
   {
-    public override Task Handle(TestCommandRequest request, ICommandHandler<TestCommandRequest> handler,
-      Func<TestCommandRequest, CancellationToken, Task> next, CancellationToken cancellationToken)
-      => next(request, cancellationToken);
-  }
-
-  private sealed class ConcreteQueryRequestExtension
-    : QueryRequestExtensionBase<TestQueryRequest, TestQueryResponse>
-  {
-    public override Task<TestQueryResponse> Handle(TestQueryRequest request,
-      Func<TestQueryRequest, CancellationToken, Task<TestQueryResponse>> next, CancellationToken cancellationToken)
-      => next(request, cancellationToken);
-  }
-
-  private sealed class ConcreteQueryHandlerExtension
-    : QueryHandlerExtensionBase<IQueryHandler<TestQueryRequest, TestQueryResponse>, TestQueryRequest, TestQueryResponse>
-  {
-    public override Task<TestQueryResponse> Handle(TestQueryRequest request,
-      IQueryHandler<TestQueryRequest, TestQueryResponse> handler,
-      Func<TestQueryRequest, CancellationToken, Task<TestQueryResponse>> next, CancellationToken cancellationToken)
-      => next(request, cancellationToken);
+    var sut = new ConcreteCommandHandlerExtension();
+    Assert.True(sut.ShouldRun(new TestCommandRequest()));
   }
 
   [Fact]
@@ -58,17 +39,17 @@ public class ExtensionBaseDefaultsTests
   }
 
   [Fact]
-  public void CommandHandlerExtensionBaseShouldHaveDefaultOrderOfZero()
+  public void QueryHandlerExtensionBaseShouldHaveDefaultOrderOfZero()
   {
-    var sut = new ConcreteCommandHandlerExtension();
+    var sut = new ConcreteQueryHandlerExtension();
     Assert.Equal(0, sut.Order);
   }
 
   [Fact]
-  public void CommandHandlerExtensionBaseShouldReturnTrueForShouldRun()
+  public void QueryHandlerExtensionBaseShouldReturnTrueForShouldRun()
   {
-    var sut = new ConcreteCommandHandlerExtension();
-    Assert.True(sut.ShouldRun(new TestCommandRequest()));
+    var sut = new ConcreteQueryHandlerExtension();
+    Assert.True(sut.ShouldRun(new TestQueryRequest()));
   }
 
   [Fact]
@@ -85,17 +66,43 @@ public class ExtensionBaseDefaultsTests
     Assert.True(sut.ShouldRun(new TestQueryRequest()));
   }
 
-  [Fact]
-  public void QueryHandlerExtensionBaseShouldHaveDefaultOrderOfZero()
+  private sealed class
+    ConcreteCommandHandlerExtension : CommandHandlerExtensionBase<ICommandHandler<TestCommandRequest>,
+    TestCommandRequest>
   {
-    var sut = new ConcreteQueryHandlerExtension();
-    Assert.Equal(0, sut.Order);
+    public override Task Handle(TestCommandRequest request, ICommandHandler<TestCommandRequest> handler,
+      Func<TestCommandRequest, CancellationToken, Task> next, CancellationToken cancellationToken)
+    {
+      return next(request, cancellationToken);
+    }
   }
 
-  [Fact]
-  public void QueryHandlerExtensionBaseShouldReturnTrueForShouldRun()
+  private sealed class ConcreteCommandRequestExtension : CommandRequestExtensionBase<TestCommandRequest>
   {
-    var sut = new ConcreteQueryHandlerExtension();
-    Assert.True(sut.ShouldRun(new TestQueryRequest()));
+    public override Task Handle(TestCommandRequest request, Func<TestCommandRequest, CancellationToken, Task> next,
+      CancellationToken cancellationToken)
+    {
+      return next(request, cancellationToken);
+    }
+  }
+
+  private sealed class ConcreteQueryHandlerExtension : QueryHandlerExtensionBase<
+    IQueryHandler<TestQueryRequest, TestQueryResponse>, TestQueryRequest, TestQueryResponse>
+  {
+    public override Task<TestQueryResponse> Handle(TestQueryRequest request,
+      IQueryHandler<TestQueryRequest, TestQueryResponse> handler,
+      Func<TestQueryRequest, CancellationToken, Task<TestQueryResponse>> next, CancellationToken cancellationToken)
+    {
+      return next(request, cancellationToken);
+    }
+  }
+
+  private sealed class ConcreteQueryRequestExtension : QueryRequestExtensionBase<TestQueryRequest, TestQueryResponse>
+  {
+    public override Task<TestQueryResponse> Handle(TestQueryRequest request,
+      Func<TestQueryRequest, CancellationToken, Task<TestQueryResponse>> next, CancellationToken cancellationToken)
+    {
+      return next(request, cancellationToken);
+    }
   }
 }

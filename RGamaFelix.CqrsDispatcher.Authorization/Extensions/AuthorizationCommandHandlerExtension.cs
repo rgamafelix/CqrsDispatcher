@@ -60,8 +60,7 @@ public class AuthorizationCommandHandlerExtension<THandler, TRequest> : ICommand
   public async Task Handle(TRequest request, THandler handler, Func<TRequest, CancellationToken, Task> next,
     CancellationToken cancellationToken)
   {
-    await AuthorizationHelper.EnforceAuthorizationAsync(
-      AuthorizationHelper.GetAttributes(typeof(THandler)),
+    await AuthorizationHelper.EnforceAuthorizationAsync(AuthorizationHelper.GetAttributes(typeof(THandler)),
       _httpContextAccessor, _authorizationService, _logger, request, typeof(TRequest), cancellationToken);
 
     cancellationToken.ThrowIfCancellationRequested();
