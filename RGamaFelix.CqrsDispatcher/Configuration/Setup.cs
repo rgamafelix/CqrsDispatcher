@@ -15,6 +15,15 @@ namespace RGamaFelix.CqrsDispatcher.Configuration;
 /// </summary>
 public static class Setup
 {
+  private static readonly HashSet<Type> _serviceTypeDefinitions =
+  [
+    typeof(IQueryHandler<,>),
+    typeof(ICommandHandler<>),
+    typeof(IQueryRequestExtension<,>),
+    typeof(IQueryHandlerExtension<,,>),
+    typeof(ICommandRequestExtension<>),
+    typeof(ICommandHandlerExtension<,>)
+  ];
   /// <summary>Adds the CQRS Dispatcher Framework to the service collection, including core mediator configuration.</summary>
   /// <param name="services">The service collection to which the CQRS Dispatcher Framework will be added.</param>
   /// <returns>The updated service collection with the CQRS Dispatcher Framework registered.</returns>
@@ -36,12 +45,28 @@ public static class Setup
   public static IServiceCollection RegisterCqrsDispatcherComponents(this IServiceCollection services,
     params Assembly[] assemblies)
   {
-    services.Scan(scan => scan.FromAssemblies(assemblies)
-      .AddClasses(classes => classes.AssignableToAny(typeof(IQueryHandler<,>), typeof(ICommandHandler<>),
-        typeof(IQueryRequestExtension<,>), typeof(IQueryHandlerExtension<,,>), typeof(ICommandRequestExtension<>),
-        typeof(ICommandHandlerExtension<,>)))
-      .AsImplementedInterfaces()
-      .WithScopedLifetime());
+    if (assemblies is null || assemblies.Length == 0)
+    {
+      return services;
+    }
+
+    foreach (var assembly in assemblies.Distinct())
+    {
+      foreach (var implementationType in assembly.DefinedTypes
+                 .Where(t => t is { IsClass: true, IsAbstract: false, ContainsGenericParameters: false })
+                 .Select(t => t.AsType()))
+      {
+        // Register only the matching implemented interfaces (like Scrutor's AsImplementedInterfaces()).
+        var matchingServiceTypes = implementationType.GetInterfaces()
+          .Where(i => i.IsGenericType)
+          .Where(i => _serviceTypeDefinitions.Contains(i.GetGenericTypeDefinition()));
+
+        foreach (var serviceType in matchingServiceTypes)
+        {
+          services.AddScoped(serviceType, implementationType);
+        }
+      }
+    }
 
     return services;
   }
