@@ -31,6 +31,29 @@ public class Dispatcher
     _logger = logger;
   }
 
+  private static Func<TRequest, CancellationToken, Task> WithCancellationCheck<TRequest>(
+    Func<TRequest, CancellationToken, Task> next)
+  {
+    return async (request, cancellationToken) =>
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+      await next(request, cancellationToken).ConfigureAwait(false);
+      cancellationToken.ThrowIfCancellationRequested();
+    };
+  }
+
+  private static Func<TRequest, CancellationToken, Task<TResponse>> WithCancellationCheck<TRequest, TResponse>(
+    Func<TRequest, CancellationToken, Task<TResponse>> next)
+  {
+    return async (request, cancellationToken) =>
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+      var response = await next(request, cancellationToken).ConfigureAwait(false);
+      cancellationToken.ThrowIfCancellationRequested();
+      return response;
+    };
+  }
+
   /// <summary>Publishes a command request for asynchronous processing.</summary>
   /// <param name="request">The command request to be processed, implementing <see cref="ICommandRequest" />.</param>
   /// <param name="onException">Optional callback to handle exceptions that may occur during processing.</param>
@@ -52,13 +75,19 @@ public class Dispatcher
       throw new ArgumentNullException(nameof(request));
     }
 
+    cancellationToken.ThrowIfCancellationRequested();
+
     return Task.Run(async () =>
     {
       try
       {
+        cancellationToken.ThrowIfCancellationRequested();
+
         using var serviceScope = _serviceProvider.CreateScope();
         var scopedProvider = serviceScope.ServiceProvider;
         await InternalPublish(request, scopedProvider, cancellationToken).ConfigureAwait(false);
+
+        cancellationToken.ThrowIfCancellationRequested();
       }
       catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
       {
@@ -106,18 +135,27 @@ public class Dispatcher
         throw new ArgumentNullException(nameof(request));
       }
 
+      cancellationToken.ThrowIfCancellationRequested();
+
       var handler = GetQueryHandler<TRequest, TResponse>(request);
       var handlerExecutionPipeline = GetQueryHandlerExtensions(request, handler);
       var requestExtensions = GetQueryRequestExtensions<TRequest, TResponse>(request);
 
       var completePipeline = BuildPipeline(handlerExecutionPipeline, requestExtensions,
-        (extension, next) => (req, ct) =>
-          extension != null
-            ? ((IQueryRequestExtension<TRequest, TResponse>)extension).Handle(req, next, ct)
-            : throw new NullReferenceException(
-              $"Null extension in query pipeline for request {typeof(TRequest).Name}"));
+        (extension, next) => WithCancellationCheck<TRequest, TResponse>(async (req, ct) =>
+        {
+          if (extension != null)
+          {
+            return await ((IQueryRequestExtension<TRequest, TResponse>)extension)
+              .Handle(req, next, ct)
+              .ConfigureAwait(false);
+          }
 
-      return await completePipeline(request, cancellationToken);
+          throw new NullReferenceException(
+            $"Null extension in query pipeline for request {typeof(TRequest).Name}");
+        }));
+
+      return await completePipeline(request, cancellationToken).ConfigureAwait(false);
     }
     catch (Exception e)
     {
@@ -230,27 +268,38 @@ public class Dispatcher
   private async Task AllHandlers<TRequest>(TRequest req, List<object> handlers, TRequest originalRequest,
     IServiceProvider provider, CancellationToken token) where TRequest : ICommandRequest
   {
+    token.ThrowIfCancellationRequested();
+
     var tasks = handlers.Select(async handler =>
     {
+      token.ThrowIfCancellationRequested();
+
       var handlerType = handler.GetType();
 
       var handlerPipelines = GetExtensions<dynamic>(
         typeof(ICommandHandlerExtension<,>).MakeGenericType(handlerType, typeof(TRequest)), typeof(TRequest),
         originalRequest, "command handler pipelines", provider);
 
-      var handlerDelegate = (handler as ICommandHandler<TRequest>)!.Handle;
+      var handlerDelegate = WithCancellationCheck<TRequest>((handler as ICommandHandler<TRequest>)!.Handle);
 
       var pipeline = BuildPipeline(handlerDelegate, handlerPipelines,
-        (extension, next) => (r, ct) =>
-          extension != null
-            ? (Task)((dynamic)extension).Handle((dynamic)r, (dynamic)handler, next, ct)
-            : throw new NullReferenceException(
-              $"Null extension in command pipeline for request {typeof(TRequest).Name}"));
+        (extension, next) => WithCancellationCheck<TRequest>(async (r, ct) =>
+        {
+          if (extension != null)
+          {
+            await ((Task)((dynamic)extension).Handle((dynamic)r, (dynamic)handler, next, ct)).ConfigureAwait(false);
+            return;
+          }
 
-      await pipeline(req, token);
+          throw new NullReferenceException(
+            $"Null extension in command pipeline for request {typeof(TRequest).Name}");
+        }));
+
+      await pipeline(req, token).ConfigureAwait(false);
     });
 
-    await Task.WhenAll(tasks);
+    await Task.WhenAll(tasks).ConfigureAwait(false);
+    token.ThrowIfCancellationRequested();
   }
 
   private List<T> GetExtensions<T>(Type extensionGenericType, Type requestType, object request, string logMessage,
@@ -311,13 +360,20 @@ public class Dispatcher
       typeof(TRequest), request, "query handler pipelines", _serviceProvider);
 
     var handlerPipelines = runtimeTypePipelines.Concat(serviceTypePipelines).ToList();
-    Func<TRequest, CancellationToken, Task<TResponse>> handlerDelegate = handler.Handle;
+    Func<TRequest, CancellationToken, Task<TResponse>> handlerDelegate =
+      WithCancellationCheck<TRequest, TResponse>(handler.Handle);
 
     return BuildPipeline(handlerDelegate, handlerPipelines,
-      (extension, next) => (r, ct) =>
-        extension != null
-          ? (Task<TResponse>)((dynamic)extension).Handle((dynamic)r, (dynamic)handler, next, ct)
-          : throw new NullReferenceException($"Null extension in query pipeline for request {typeof(TRequest).Name}"));
+      (extension, next) => WithCancellationCheck<TRequest, TResponse>(async (r, ct) =>
+      {
+        if (extension != null)
+        {
+          return await ((Task<TResponse>)((dynamic)extension).Handle((dynamic)r, (dynamic)handler, next, ct))
+            .ConfigureAwait(false);
+        }
+
+        throw new NullReferenceException($"Null extension in query pipeline for request {typeof(TRequest).Name}");
+      }));
   }
 
   private List<IQueryRequestExtension<TRequest, TResponse>> GetQueryRequestExtensions<TRequest, TResponse>(
@@ -349,14 +405,18 @@ public class Dispatcher
   private async Task InternalPublish<TRequest>(TRequest request, IServiceProvider provider,
     CancellationToken cancellationToken) where TRequest : ICommandRequest
   {
+    cancellationToken.ThrowIfCancellationRequested();
+
     var handlers = GetCommandHandlers<TRequest>(provider);
     var requestPipelines = GetRequestCommandExtensions(request, provider);
 
     var fullPipeline = BuildPipeline(
-      (Func<TRequest, CancellationToken, Task>)((req, token) => AllHandlers(req, handlers, request, provider, token)),
+      WithCancellationCheck<TRequest>((req, token) => AllHandlers(req, handlers, request, provider, token)),
       requestPipelines,
-      (extension, next) => (r, ct) => ((ICommandRequestExtension<TRequest>)extension!).Handle(r, next, ct));
+      (extension, next) => WithCancellationCheck<TRequest>((r, ct) =>
+        ((ICommandRequestExtension<TRequest>)extension!).Handle(r, next, ct)));
 
-    await fullPipeline(request, cancellationToken);
+    await fullPipeline(request, cancellationToken).ConfigureAwait(false);
+    cancellationToken.ThrowIfCancellationRequested();
   }
 }
