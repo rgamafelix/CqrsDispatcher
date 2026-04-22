@@ -23,7 +23,7 @@ experimental and may not follow all best practices or be suitable for production
 - ⚡ Async support out of the box
 - 🔄 Separate handling for Commands and Queries
 - 🔌 Easy integration with dependency injection
-- 📦 Pipeline behavior support for cross-cutting concerns
+- 📦 Pipeline extension support for cross-cutting concerns
 
 ## Getting Started
 
@@ -36,7 +36,7 @@ Add the package to your project:
 First, register the CQRS dispatcher in your dependency injection container:
 
 ``` csharp
-services.AddScoped<Dispatcher>();
+services.AddCqrsDispatcherFramework();
 ```
 
 ### Commands
@@ -74,6 +74,14 @@ public class CreateUserCommandHandler : ICommandHandler<CreateUserCommand>
 ```
 
 #### 3. Register the Handler
+
+Use the auto-scan method to register all handlers and extensions from your assembly:
+
+``` csharp
+services.RegisterCqrsDispatcherComponents(Assembly.GetExecutingAssembly());
+```
+
+Or register manually:
 
 ``` csharp
 services.AddScoped<ICommandHandler<CreateUserCommand>, CreateUserCommandHandler>();
@@ -137,7 +145,7 @@ public class GetUserByIdQueryHandler : IQueryHandler<GetUserByIdQuery, UserDto>
         _userRepository = userRepository;
     }
     
-    public async Task<UserDto> HandleAsync(GetUserByIdQuery request, CancellationToken cancellationToken)
+    public async Task<UserDto> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
         return new UserDto
@@ -150,12 +158,19 @@ public class GetUserByIdQueryHandler : IQueryHandler<GetUserByIdQuery, UserDto>
 }
 ```
 
-#### 3. Register the Handler and Selector
+#### 3. Register the Handler
+
+``` csharp
+services.RegisterCqrsDispatcherComponents(Assembly.GetExecutingAssembly());
+```
+
+Or manually:
 
 ``` csharp
 services.AddScoped<IQueryHandler<GetUserByIdQuery, UserDto>, GetUserByIdQueryHandler>();
-services.AddScoped<IQueryHandlerSelector<GetUserByIdQuery, UserDto>, DefaultFirstSelector<GetUserByIdQuery, UserDto>>();
 ```
+
+A selector is only required when multiple handlers are registered for the same query (see [Multiple Handlers](#multiple-handlers)).
 
 #### 4. Execute the Query
 
@@ -169,21 +184,21 @@ public async Task<IActionResult> GetUser(int id)
 }
 ```
 
-### Pipeline Behaviors
+### Pipeline Extensions
 
-Pipeline behaviors allow you to add cross-cutting concerns like logging, validation, or caching.
+Pipeline extensions allow you to add cross-cutting concerns like logging, validation, or caching.
 
-#### Request Behaviors
+#### Request Extensions
 
-Request behaviors run before and after the handler execution:
+Request extensions run before and after the handler execution:
 
 ``` csharp
-public class LoggingCommandBehavior<TRequest> : ICommandRequestBehavior<TRequest>
+public class LoggingCommandExtension<TRequest> : ICommandRequestExtension<TRequest>
     where TRequest : ICommandRequest
 {
-    private readonly ILogger<LoggingCommandBehavior<TRequest>> _logger;
+    private readonly ILogger<LoggingCommandExtension<TRequest>> _logger;
     
-    public LoggingCommandBehavior(ILogger<LoggingCommandBehavior<TRequest>> logger)
+    public LoggingCommandExtension(ILogger<LoggingCommandExtension<TRequest>> logger)
     {
         _logger = logger;
     }
@@ -203,23 +218,23 @@ public class LoggingCommandBehavior<TRequest> : ICommandRequestBehavior<TRequest
 }
 ```
 
-#### Handler Behaviors
+#### Handler Extensions
 
-Handler behaviors wrap around specific handlers:
+Handler extensions wrap around specific handlers:
 
 ``` csharp
-public class ValidationCommandBehavior<THandler, TRequest> : ICommandHandlerBehavior<THandler, TRequest>
+public class ValidationCommandExtension<THandler, TRequest> : ICommandHandlerExtension<THandler, TRequest>
     where THandler : ICommandHandler<TRequest>
     where TRequest : ICommandRequest
 {
     private readonly IValidator<TRequest> _validator;
     
-    public ValidationCommandBehavior(IValidator<TRequest> validator)
+    public ValidationCommandExtension(IValidator<TRequest> validator)
     {
         _validator = validator;
     }
     
-    public int? Order => -1; // Run before other behaviors
+    public int? Order => -1; // Run before other extensions
     
     public async Task Handle(TRequest request, THandler handler, Func<TRequest, CancellationToken, Task> next, CancellationToken cancellationToken)
     {
@@ -236,11 +251,11 @@ public class ValidationCommandBehavior<THandler, TRequest> : ICommandHandlerBeha
 }
 ```
 
-#### Register Behaviors
+#### Register Extensions
 
 ``` csharp
-services.AddScoped(typeof(ICommandRequestBehavior<>), typeof(LoggingCommandBehavior<>));
-services.AddScoped(typeof(ICommandHandlerBehavior<,>), typeof(ValidationCommandBehavior<,>));
+services.AddScoped(typeof(ICommandRequestExtension<>), typeof(LoggingCommandExtension<>));
+services.AddScoped(typeof(ICommandHandlerExtension<,>), typeof(ValidationCommandExtension<,>));
 ```
 
 ### Multiple Handlers
