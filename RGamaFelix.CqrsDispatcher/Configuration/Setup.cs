@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using RGamaFelix.CqrsDispatcher.Command.Handler;
 using RGamaFelix.CqrsDispatcher.Command.Pipeline.Handler;
 using RGamaFelix.CqrsDispatcher.Command.Pipeline.Request;
+using RGamaFelix.CqrsDispatcher.Event.Handler;
+using RGamaFelix.CqrsDispatcher.Event.Pipeline.Handler;
+using RGamaFelix.CqrsDispatcher.Event.Pipeline.Request;
 using RGamaFelix.CqrsDispatcher.Query.Handler;
 using RGamaFelix.CqrsDispatcher.Query.Pipeline.Handler;
 using RGamaFelix.CqrsDispatcher.Query.Pipeline.Request;
@@ -19,10 +22,13 @@ public static class Setup
   [
     typeof(IQueryHandler<,>),
     typeof(ICommandHandler<>),
+    typeof(IEventHandler<>),
     typeof(IQueryRequestExtension<,>),
     typeof(IQueryHandlerExtension<,,>),
     typeof(ICommandRequestExtension<>),
-    typeof(ICommandHandlerExtension<,>)
+    typeof(ICommandHandlerExtension<,>),
+    typeof(IEventRequestExtension<>),
+    typeof(IEventHandlerExtension<,>)
   ];
 
   /// <summary>Adds the CQRS Dispatcher Framework to the service collection, including core mediator configuration.</summary>
