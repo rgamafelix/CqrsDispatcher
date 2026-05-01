@@ -6,18 +6,24 @@
         <LangVersion>latestmajor</LangVersion>
         <Title>CqrsDispatcher</Title>
         <Authors>Rodrigo Gama Felix &lt;rodrigo@gamafelix.com.br&gt;</Authors>
-        <Description>A policy based authorization extension for the CqrsDIspatcher Framework</Description>
+        <Description>A policy based authorization extension for the CqrsDispatcher Framework</Description>
         <Copyright>Rodrigo Gama Felix&lt;rodrigo@gamafelix.com.br&gt;@2025</Copyright>
         <PackageProjectUrl>https://github.com/rgamafelix/CqrsDispatcher</PackageProjectUrl>
         <RepositoryUrl>https://github.com/rgamafelix/CqrsDispatcher</RepositoryUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryType>git</RepositoryType>
         <PackageTags>c# cqrs authorization</PackageTags>
-        <Version>3.1.0</Version>
-        <AssemblyVersion>3.1.0.0</AssemblyVersion>
-        <FileVersion>3.1.0.0</FileVersion>
+        <Version>4.0.0</Version>
+        <AssemblyVersion>4.0.0.0</AssemblyVersion>
+        <FileVersion>4.0.0.0</FileVersion>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <TargetFrameworks>net9.0;net10.0;net8.0</TargetFrameworks>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <Deterministic>true</Deterministic>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>
@@ -38,6 +44,10 @@
         <PackageReference Condition="'$(TargetFramework)' == 'net10.0'" Include="Microsoft.Extensions.Logging" Version="10.0.5"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net9.0'" Include="Microsoft.Extensions.Logging" Version="9.0.14"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net8.0'" Include="Microsoft.Extensions.Logging" Version="8.0.1"/>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
 </Project>
