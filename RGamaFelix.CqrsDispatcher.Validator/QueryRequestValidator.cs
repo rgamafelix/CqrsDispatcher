@@ -31,10 +31,21 @@ public sealed class QueryRequestValidator<TRequest, TResponse> : IQueryRequestEx
     _validator = validators.FirstOrDefault();
   }
 
-  /// inheritdoc
+  /// <inheritdoc />
   public int? Order => 0;
 
-  /// inheritdoc
+  /// <summary>Processes a query request by applying validation and forwarding it to the next handler in the pipeline.</summary>
+  /// <param name="request">
+  ///   The query request to process, which implements the <see cref="IQueryRequest{TResponse}" />
+  ///   interface.
+  /// </param>
+  /// <param name="next">A delegate representing the next handler in the query pipeline to invoke after validation succeeds.</param>
+  /// <param name="cancellationToken">
+  ///   A token to observe while waiting for the task to complete, which may be used to cancel
+  ///   the operation.
+  /// </param>
+  /// <returns>Returns the response produced by the query request after passing through the validation and pipeline.</returns>
+  /// <exception cref="ValidationException">Thrown if the query request fails validation due to rule violations.</exception>
   public async Task<TResponse> Handle(TRequest request, Func<TRequest, CancellationToken, Task<TResponse>> next,
     CancellationToken cancellationToken)
   {
@@ -48,7 +59,7 @@ public sealed class QueryRequestValidator<TRequest, TResponse> : IQueryRequestEx
     return await next(request, cancellationToken);
   }
 
-  /// inheritdoc
+  /// <inheritdoc />
   public bool ShouldRun(TRequest request)
   {
     return _validator is not null;

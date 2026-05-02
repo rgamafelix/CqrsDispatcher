@@ -61,15 +61,7 @@ public sealed class CommandRequestValidator<TRequest> : ICommandRequestExtension
     await next(request, cancellationToken);
   }
 
-  /// <summary>
-  ///   Determines whether the current command request extension should be executed
-  ///   based on the presence of one or more validators.
-  /// </summary>
-  /// <param name="request">The command request being processed. Must implement <see cref="ICommandRequest" />.</param>
-  /// <returns>
-  ///   A boolean value indicating whether the validation logic should be executed.
-  ///   Returns <c>true</c> if any validators are present; otherwise, <c>false</c>.
-  /// </returns>
+  /// <inheritdoc />
   public bool ShouldRun(TRequest request)
   {
     return _validators.Any();

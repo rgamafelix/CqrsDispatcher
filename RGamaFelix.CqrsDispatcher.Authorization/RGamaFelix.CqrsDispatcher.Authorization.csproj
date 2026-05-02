@@ -6,45 +6,44 @@
         <LangVersion>latestmajor</LangVersion>
         <Title>CqrsDispatcher</Title>
         <Authors>Rodrigo Gama Felix &lt;rodrigo@gamafelix.com.br&gt;</Authors>
-        <Description>A lightweight, easy-to-use CQRS implementation.</Description>
+        <Description>A policy based authorization extension for the CqrsDispatcher Framework</Description>
         <Copyright>Rodrigo Gama Felix&lt;rodrigo@gamafelix.com.br&gt;@2025</Copyright>
         <PackageProjectUrl>https://github.com/rgamafelix/CqrsDispatcher</PackageProjectUrl>
         <RepositoryUrl>https://github.com/rgamafelix/CqrsDispatcher</RepositoryUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>c# cqrs</PackageTags>
+        <PackageTags>c# cqrs authorization</PackageTags>
         <Version>4.0.0</Version>
         <AssemblyVersion>4.0.0.0</AssemblyVersion>
         <FileVersion>4.0.0.0</FileVersion>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <TargetFrameworks>net9.0;net10.0;net8.0</TargetFrameworks>
-        <PackageIcon>icon.svg</PackageIcon>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <Deterministic>true</Deterministic>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
+
     <ItemGroup>
-        <None Include="..\icon.svg" Pack="true" PackagePath="\"/>
-        <None Include="README.md" Pack="true" PackagePath="\"/>
-        <None Include="../LICENSE" Pack="true" PackagePath=""/>
+        <ProjectReference Include="..\RGamaFelix.CqrsDispatcher\RGamaFelix.CqrsDispatcher.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net10.0'" Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net9.0'" Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.14"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net8.0'" Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net10.0'" Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net9.0'" Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.14"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net8.0'" Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3"/>
+        <PackageReference Condition="'$(TargetFramework)' == 'net10.0'" Include="Microsoft.AspNetCore.Authorization" Version="10.0.5"/>
+        <PackageReference Condition="'$(TargetFramework)' == 'net9.0'" Include="Microsoft.AspNetCore.Authorization" Version="9.0.14"/>
+        <PackageReference Condition="'$(TargetFramework)' == 'net8.0'" Include="Microsoft.AspNetCore.Authorization" Version="8.0.25"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net10.0'" Include="Microsoft.Extensions.Logging" Version="10.0.5"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net9.0'" Include="Microsoft.Extensions.Logging" Version="9.0.14"/>
         <PackageReference Condition="'$(TargetFramework)' == 'net8.0'" Include="Microsoft.Extensions.Logging" Version="8.0.1"/>
-        <PackageReference Condition="'$(TargetFramework)' == 'net10.0'" Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.5"/>
-        <PackageReference Condition="'$(TargetFramework)' == 'net9.0'" Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.14"/>
-        <PackageReference Condition="'$(TargetFramework)' == 'net8.0'" Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2"/>
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
