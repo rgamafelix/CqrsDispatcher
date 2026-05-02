@@ -13,5 +13,8 @@ public abstract class EventRequestExtensionBase<TEvent> : IEventRequestExtension
     CancellationToken cancellationToken);
 
   /// <inheritdoc />
-  public virtual bool ShouldRun(TEvent @event) => true;
+  public virtual bool ShouldRun(TEvent @event)
+  {
+    return true;
+  }
 }

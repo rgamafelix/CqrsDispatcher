@@ -13,8 +13,10 @@ public class EventHandlerTests
     // Arrange
     var services = TestHelper.CreateCleanServices();
     var handler = Substitute.For<IEventHandler<TestEvent>>();
+
     handler.Handle(Arg.Any<TestEvent>(), Arg.Any<CancellationToken>())
       .Returns(x => throw new ApplicationException("Test Exception"));
+
     services.AddScoped<IEventHandler<TestEvent>>(_ => handler);
     await using var provider = services.BuildServiceProvider();
     var dispatcher = new Dispatcher(provider, null);
@@ -28,13 +30,27 @@ public class EventHandlerTests
   }
 
   [Fact]
+  public async Task DispatcherShouldNotThrowWhenNoEventHandlersAreRegistered()
+  {
+    // Arrange
+    var services = TestHelper.CreateCleanServices();
+    await using var provider = services.BuildServiceProvider();
+    var dispatcher = new Dispatcher(provider, null);
+
+    // Act & Assert — no exception expected
+    await dispatcher.Notify(new TestEvent());
+  }
+
+  [Fact]
   public async Task DispatcherShouldRethrowWhenNoExceptionCallbackIsProvided()
   {
     // Arrange
     var services = TestHelper.CreateCleanServices();
     var handler = Substitute.For<IEventHandler<TestEvent>>();
+
     handler.Handle(Arg.Any<TestEvent>(), Arg.Any<CancellationToken>())
       .Returns(x => throw new ApplicationException("Test Exception"));
+
     services.AddScoped<IEventHandler<TestEvent>>(_ => handler);
     await using var provider = services.BuildServiceProvider();
     var dispatcher = new Dispatcher(provider, null);
@@ -66,30 +82,6 @@ public class EventHandlerTests
   }
 
   [Fact]
-  public async Task DispatcherShouldNotThrowWhenNoEventHandlersAreRegistered()
-  {
-    // Arrange
-    var services = TestHelper.CreateCleanServices();
-    await using var provider = services.BuildServiceProvider();
-    var dispatcher = new Dispatcher(provider, null);
-
-    // Act & Assert — no exception expected
-    await dispatcher.Notify(new TestEvent());
-  }
-
-  [Fact]
-  public async Task DispatcherShouldThrowWhenEventIsNull()
-  {
-    // Arrange
-    var services = TestHelper.CreateCleanServices();
-    await using var provider = services.BuildServiceProvider();
-    var dispatcher = new Dispatcher(provider, null);
-
-    // Act & Assert
-    await Assert.ThrowsAsync<ArgumentNullException>(async () => await dispatcher.Notify<TestEvent>(null!));
-  }
-
-  [Fact]
   public async Task DispatcherShouldRunCorrectEventHandlerWhenHandlersAreRegisteredForMultipleEventTypes()
   {
     // Arrange
@@ -109,5 +101,17 @@ public class EventHandlerTests
     // Assert
     await handler1.Received(1).Handle(Arg.Any<TestEvent>(), Arg.Any<CancellationToken>());
     await handler2.DidNotReceive().Handle(Arg.Any<AlternateTestEvent>(), Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task DispatcherShouldThrowWhenEventIsNull()
+  {
+    // Arrange
+    var services = TestHelper.CreateCleanServices();
+    await using var provider = services.BuildServiceProvider();
+    var dispatcher = new Dispatcher(provider, null);
+
+    // Act & Assert
+    await Assert.ThrowsAsync<ArgumentNullException>(async () => await dispatcher.Notify<TestEvent>(null!));
   }
 }

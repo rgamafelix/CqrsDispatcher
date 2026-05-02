@@ -16,5 +16,8 @@ public abstract class EventHandlerExtensionBase<THandler, TEvent> : IEventHandle
     CancellationToken cancellationToken);
 
   /// <inheritdoc />
-  public virtual bool ShouldRun(TEvent @event) => true;
+  public virtual bool ShouldRun(TEvent @event)
+  {
+    return true;
+  }
 }

@@ -63,7 +63,7 @@ public static class Setup
     /// </summary>
     public IServiceCollection AddAnyScopePolicy(string policyName, params string[] requiredScopes)
     {
-      ArgumentException.ThrowIfNullOrWhiteSpace(policyName, nameof(policyName));
+      ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
       ThrowIfNullOrEmpty(requiredScopes, nameof(requiredScopes), "At least one scope must be provided.");
       var required = new HashSet<string>(requiredScopes, StringComparer.OrdinalIgnoreCase);
 

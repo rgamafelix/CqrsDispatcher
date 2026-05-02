@@ -10,26 +10,50 @@ namespace RGamaFelix.CqrsDispatcher.Test;
 public class EventHandlerPipelineTests
 {
   [Fact]
+  public async Task EventHandlerExtensionShouldNotRunWhenShouldRunReturnsFalse()
+  {
+    // Arrange
+    var services = TestHelper.CreateCleanServices();
+    var handler = Substitute.For<IEventHandler<TestEvent>>();
+    handler.Handle(Arg.Any<TestEvent>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+    var extension = Substitute.For<IEventHandlerExtension<IEventHandler<TestEvent>, TestEvent>>();
+    extension.Order.Returns(0);
+    extension.ShouldRun(Arg.Any<TestEvent>()).Returns(false);
+    services.AddScoped<IEventHandler<TestEvent>>(_ => handler);
+    services.AddScoped<IEventHandlerExtension<IEventHandler<TestEvent>, TestEvent>>(_ => extension);
+    await using var provider = services.BuildServiceProvider();
+    var dispatcher = new Dispatcher(provider, null);
+
+    // Act
+    await dispatcher.Notify(new TestEvent());
+
+    // Assert
+    await extension.DidNotReceive()
+      .Handle(Arg.Any<TestEvent>(), Arg.Any<IEventHandler<TestEvent>>(),
+        Arg.Any<Func<TestEvent, CancellationToken, Task>>(), Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
   public async Task EventHandlerExtensionShouldRunBeforeHandler()
   {
     // Arrange
     var callOrder = new List<string>();
-
     var services = TestHelper.CreateCleanServices();
-
     var handler = Substitute.For<IEventHandler<TestEvent>>();
+
     handler.Handle(Arg.Any<TestEvent>(), Arg.Any<CancellationToken>())
       .Returns(x =>
       {
         callOrder.Add("handler");
+
         return Task.CompletedTask;
       });
 
     var extension = Substitute.For<IEventHandlerExtension<IEventHandler<TestEvent>, TestEvent>>();
     extension.Order.Returns(0);
     extension.ShouldRun(Arg.Any<TestEvent>()).Returns(true);
-    extension
-      .Handle(Arg.Any<TestEvent>(), Arg.Any<IEventHandler<TestEvent>>(),
+
+    extension.Handle(Arg.Any<TestEvent>(), Arg.Any<IEventHandler<TestEvent>>(),
         Arg.Any<Func<TestEvent, CancellationToken, Task>>(), Arg.Any<CancellationToken>())
       .Returns(async x =>
       {
@@ -51,20 +75,17 @@ public class EventHandlerPipelineTests
   }
 
   [Fact]
-  public async Task EventHandlerExtensionShouldNotRunWhenShouldRunReturnsFalse()
+  public async Task EventRequestExtensionShouldNotRunWhenShouldRunReturnsFalse()
   {
     // Arrange
     var services = TestHelper.CreateCleanServices();
-
     var handler = Substitute.For<IEventHandler<TestEvent>>();
     handler.Handle(Arg.Any<TestEvent>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-
-    var extension = Substitute.For<IEventHandlerExtension<IEventHandler<TestEvent>, TestEvent>>();
+    var extension = Substitute.For<IEventRequestExtension<TestEvent>>();
     extension.Order.Returns(0);
     extension.ShouldRun(Arg.Any<TestEvent>()).Returns(false);
-
     services.AddScoped<IEventHandler<TestEvent>>(_ => handler);
-    services.AddScoped<IEventHandlerExtension<IEventHandler<TestEvent>, TestEvent>>(_ => extension);
+    services.AddScoped<IEventRequestExtension<TestEvent>>(_ => extension);
     await using var provider = services.BuildServiceProvider();
     var dispatcher = new Dispatcher(provider, null);
 
@@ -72,9 +93,8 @@ public class EventHandlerPipelineTests
     await dispatcher.Notify(new TestEvent());
 
     // Assert
-    await extension.DidNotReceive().Handle(
-      Arg.Any<TestEvent>(), Arg.Any<IEventHandler<TestEvent>>(),
-      Arg.Any<Func<TestEvent, CancellationToken, Task>>(), Arg.Any<CancellationToken>());
+    await extension.DidNotReceive()
+      .Handle(Arg.Any<TestEvent>(), Arg.Any<Func<TestEvent, CancellationToken, Task>>(), Arg.Any<CancellationToken>());
   }
 
   [Fact]
@@ -82,22 +102,22 @@ public class EventHandlerPipelineTests
   {
     // Arrange
     var callOrder = new List<string>();
-
     var services = TestHelper.CreateCleanServices();
-
     var handler = Substitute.For<IEventHandler<TestEvent>>();
+
     handler.Handle(Arg.Any<TestEvent>(), Arg.Any<CancellationToken>())
       .Returns(x =>
       {
         callOrder.Add("handler");
+
         return Task.CompletedTask;
       });
 
     var extension = Substitute.For<IEventRequestExtension<TestEvent>>();
     extension.Order.Returns(0);
     extension.ShouldRun(Arg.Any<TestEvent>()).Returns(true);
-    extension
-      .Handle(Arg.Any<TestEvent>(), Arg.Any<Func<TestEvent, CancellationToken, Task>>(),
+
+    extension.Handle(Arg.Any<TestEvent>(), Arg.Any<Func<TestEvent, CancellationToken, Task>>(),
         Arg.Any<CancellationToken>())
       .Returns(async x =>
       {
@@ -116,31 +136,5 @@ public class EventHandlerPipelineTests
 
     // Assert
     Assert.Equal(["request-extension", "handler"], callOrder);
-  }
-
-  [Fact]
-  public async Task EventRequestExtensionShouldNotRunWhenShouldRunReturnsFalse()
-  {
-    // Arrange
-    var services = TestHelper.CreateCleanServices();
-
-    var handler = Substitute.For<IEventHandler<TestEvent>>();
-    handler.Handle(Arg.Any<TestEvent>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-
-    var extension = Substitute.For<IEventRequestExtension<TestEvent>>();
-    extension.Order.Returns(0);
-    extension.ShouldRun(Arg.Any<TestEvent>()).Returns(false);
-
-    services.AddScoped<IEventHandler<TestEvent>>(_ => handler);
-    services.AddScoped<IEventRequestExtension<TestEvent>>(_ => extension);
-    await using var provider = services.BuildServiceProvider();
-    var dispatcher = new Dispatcher(provider, null);
-
-    // Act
-    await dispatcher.Notify(new TestEvent());
-
-    // Assert
-    await extension.DidNotReceive().Handle(
-      Arg.Any<TestEvent>(), Arg.Any<Func<TestEvent, CancellationToken, Task>>(), Arg.Any<CancellationToken>());
   }
 }

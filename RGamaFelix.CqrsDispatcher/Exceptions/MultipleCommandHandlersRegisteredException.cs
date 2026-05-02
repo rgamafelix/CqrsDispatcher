@@ -18,8 +18,8 @@ public class MultipleCommandHandlersRegisteredException<TRequest> : Exception wh
   {
   }
 
-  public MultipleCommandHandlersRegisteredException(string message, Exception innerException)
-    : base(message, innerException)
+  public MultipleCommandHandlersRegisteredException(string message, Exception innerException) : base(message,
+    innerException)
   {
   }
 }
