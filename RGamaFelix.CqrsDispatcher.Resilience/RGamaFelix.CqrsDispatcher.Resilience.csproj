@@ -18,7 +18,7 @@
         <FileVersion>4.0.0.0</FileVersion>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <TargetFrameworks>net9.0;net10.0;net8.0</TargetFrameworks>
-        <PackageIcon>../icon.png</PackageIcon>
+        <PackageIcon>icon.png</PackageIcon>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <Deterministic>true</Deterministic>
@@ -28,7 +28,7 @@
         <PackageReleaseNotes>A resilience and retry extension for the `RGamaFelix.CqrsDispatcher` framework. This package specifically targets **Event Handlers**, allowing them to automatically retry upon failure based on a declarative policy.</PackageReleaseNotes>
     </PropertyGroup>
     <ItemGroup>
-        <None Include="..\icon.png" Pack="true" PackagePath="\"/>
+        <None Include="../icon.png" Pack="true" PackagePath="\"/>
         <None Include="README.md" Pack="true" PackagePath="\"/>
         <None Include="../LICENSE" Pack="true" PackagePath=""/>
     </ItemGroup>
