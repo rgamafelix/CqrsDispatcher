@@ -46,6 +46,7 @@
         <ProjectReference Include="..\RGamaFelix.CqrsDispatcher\RGamaFelix.CqrsDispatcher.csproj"/>
         <ProjectReference Include="..\RGamaFelix.CqrsDispatcher.Validator\RGamaFelix.CqrsDispatcher.Validator.csproj"/>
         <ProjectReference Include="..\RGamaFelix.CqrsDispatcher.Authorization\RGamaFelix.CqrsDispatcher.Authorization.csproj"/>
+        <ProjectReference Include="..\RGamaFelix.CqrsDispatcher.Resilience\RGamaFelix.CqrsDispatcher.Resilience.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

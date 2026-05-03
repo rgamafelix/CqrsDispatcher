@@ -3,4 +3,5 @@
     <Project Path="RGamaFelix.CqrsDispatcher.Test\RGamaFelix.CqrsDispatcher.Test.csproj"/>
     <Project Path="RGamaFelix.CqrsDispatcher.Validator\RGamaFelix.CqrsDispatcher.Validator.csproj"/>
     <Project Path="RGamaFelix.CqrsDispatcher\RGamaFelix.CqrsDispatcher.csproj"/>
+    <Project Path="RGamaFelix.CqrsDispatcher.Resilience\RGamaFelix.CqrsDispatcher.Resilience.csproj"/>
 </Solution>

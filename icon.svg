@@ -1,61 +1,77 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-    <defs>
-        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#1E293B"/>
-            <stop offset="100%" stop-color="#0F172A"/>
-        </linearGradient>
-        <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#3B82F6"/>
-            <stop offset="100%" stop-color="#2563EB"/>
-        </linearGradient>
-        <linearGradient id="command" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#EF4444"/>
-            <stop offset="100%" stop-color="#B91C1C"/>
-        </linearGradient>
-        <linearGradient id="query" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#10B981"/>
-            <stop offset="100%" stop-color="#047857"/>
-        </linearGradient>
-        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/>
-        </filter>
-    </defs>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
 
-    <!-- Background -->
-    <rect width="512" height="512" rx="100" fill="url(#bg)"/>
-    <rect width="480" height="480" x="16" y="16" rx="84" fill="none" stroke="#334155" stroke-width="4"/>
-
-    <!-- Dispatcher Core (Center) -->
-    <circle cx="256" cy="256" r="88" fill="url(#primary)" filter="url(#shadow)"/>
-    <circle cx="256" cy="256" r="68" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-dasharray="16 8"
-            opacity="0.8"/>
-    <text x="256" y="270" font-family="Arial, sans-serif" font-size="40" font-weight="900" fill="#FFFFFF"
-          text-anchor="middle">CQRS
-    </text>
-
-    <!-- Command Flow (Red, Input) -->
-    <g filter="url(#shadow)">
-        <!-- Line -->
-        <path d="M 64 200 L 150 200" stroke="url(#command)" stroke-width="24" stroke-linecap="round"/>
-        <!-- Arrow Head -->
-        <polygon points="150,170 190,200 150,230" fill="url(#command)"/>
-        <text x="110" y="150" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#FCA5A5"
-              text-anchor="middle">Command
-        </text>
-    </g>
-
-    <!-- Query Flow (Green, Output) -->
-    <g filter="url(#shadow)">
-        <!-- Line -->
-        <path d="M 360 312 L 448 312" stroke="url(#query)" stroke-width="24" stroke-linecap="round"/>
-        <!-- Arrow Head -->
-        <polygon points="448,282 488,312 448,342" fill="url(#query)"/>
-        <text x="404" y="380" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#6EE7B7"
-              text-anchor="middle">Query
-        </text>
-    </g>
-
-    <!-- Small Nodes -->
-    <circle cx="64" cy="200" r="12" fill="#FCA5A5"/>
-    <circle cx="360" cy="312" r="12" fill="#6EE7B7"/>
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 135.46666 135.46667"
+   version="1.1"
+   id="svg1"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient10">
+      <stop
+         style="stop-color:#12235f;stop-opacity:1;"
+         offset="0"
+         id="stop11" />
+      <stop
+         style="stop-color:#e9bf84;stop-opacity:1;"
+         offset="1"
+         id="stop12" />
+    </linearGradient>
+    <linearGradient
+       id="swatch6">
+      <stop
+         style="stop-color:#808080;stop-opacity:1;"
+         offset="0"
+         id="stop6" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient10"
+       id="linearGradient12"
+       x1="33.460083"
+       y1="19.678576"
+       x2="90.405052"
+       y2="79.474907"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.8814814,0,0,2.6051282,-49.09352,-61.577953)" />
+  </defs>
+  <g
+     id="layer1">
+    <rect
+       style="opacity:1;mix-blend-mode:normal;fill:url(#linearGradient12);fill-rule:nonzero;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1"
+       id="rect1"
+       width="135.46666"
+       height="135.46666"
+       x="3.5527137e-15"
+       y="0"
+       rx="22.577776"
+       ry="31.261536" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:34.8733px;line-height:1.25;font-family:'3270 Nerd Font';-inkscape-font-specification:'3270 Nerd Font';stroke-width:0.363263"
+       x="-28.139856"
+       y="49.477341"
+       id="text20"
+       transform="matrix(0.73937535,-0.67441951,0.68237082,0.73007006,0,0)"><tspan
+         id="tspan20"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:34.8733px;font-family:'3270 Nerd Font';-inkscape-font-specification:'3270 Nerd Font';stroke-width:0.363263"
+         x="-28.139856"
+         y="49.477341">CQRS</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:36.3936px;line-height:1.25;font-family:'ComicShannsMono Nerd Font';-inkscape-font-specification:'ComicShannsMono Nerd Font';stroke-width:0.389932"
+       x="-73.746918"
+       y="96.450165"
+       id="text21"
+       transform="matrix(0.71150078,-0.70360216,0.68539798,0.7276907,0,0)"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:36.3936px;font-family:'3270 Nerd Font';-inkscape-font-specification:'3270 Nerd Font';stroke-width:0.389932"
+         x="-73.746918"
+         y="96.450165"
+         id="tspan22">Dispatcher</tspan></text>
+  </g>
 </svg>
