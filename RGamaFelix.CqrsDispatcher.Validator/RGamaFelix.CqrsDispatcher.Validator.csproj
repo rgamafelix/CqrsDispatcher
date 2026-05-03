@@ -18,7 +18,7 @@
         <FileVersion>4.0.0.0</FileVersion>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <TargetFrameworks>net9.0;net10.0;net8.0</TargetFrameworks>
-        <PackageIcon>../icon.svg</PackageIcon>
+        <PackageIcon>../icon.png</PackageIcon>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <Deterministic>true</Deterministic>
